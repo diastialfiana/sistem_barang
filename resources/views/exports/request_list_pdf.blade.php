@@ -56,6 +56,10 @@
         $requesterName = $requesterUser->name ?? '-';
         $company = $requesterUser->company ?? 'Bank Mega';
         $reqDate = date('d F Y');
+        if (request('month')) {
+            $dateObj = \Carbon\Carbon::createFromFormat('Y-m', request('month'));
+            $reqDate = $dateObj->format('F Y');
+        }
         $reqNo = 'RECAP-' . date('Ymd');
    
         $overallStatus = 'APPROVED';
@@ -66,7 +70,16 @@
              if (empty($category) || $category === 'UNCATEGORIZED') {
                  $category = \App\Models\Item::detectCategory($item->item->name);
              }
-             return $category;
+             // Normalize category to prevent duplicates
+             $categoryMap = [
+                 'electronics' => 'Elektronik',
+                 'elektronik' => 'Elektronik',
+                 'stationery' => 'Alat Tulis Kantor',
+                 'furniture' => 'Peralatan Kantor',
+                 'cleaning' => 'Perlengkapan Kebersihan',
+             ];
+             $lower = strtolower($category);
+             return $categoryMap[$lower] ?? $category;
         });
         
         $branchCols = $requests->pluck('branch')->unique('id')->sortBy('name');

@@ -264,7 +264,7 @@ class RequestController extends Controller
         }
         $filename .= '.pdf';
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.request_list_pdf', compact('requests', 'requesterUser', 'spvUser', 'kaUser', 'gaUser'));
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.request_list_pdf', compact('requests', 'requesterUser', 'spvUser', 'kaUser', 'gaUser', 'request'));
         $pdf->setPaper('a4', 'landscape');
         return $pdf->download($filename);
     }

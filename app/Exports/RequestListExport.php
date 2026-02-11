@@ -26,12 +26,26 @@ class RequestListExport implements FromCollection, WithHeadings, WithEvents, Wit
         $this->branches = $this->getBranches();
     }
     
+    protected function normalizeCategory($category)
+    {
+        // Normalize category variations to standard Indonesian names
+        $categoryMap = [
+            'electronics' => 'Elektronik',
+            'elektronik' => 'Elektronik',
+            'stationery' => 'Alat Tulis Kantor',
+            'furniture' => 'Peralatan Kantor',
+            'cleaning' => 'Perlengkapan Kebersihan',
+        ];
+        
+        $lower = strtolower($category);
+        return $categoryMap[$lower] ?? $category;
+    }
+    
     protected function getBranches()
     {
         $user = Auth::user();
         $query = Request::with(['branch'])
-                  ->where('status', '!=', 'rejected')
-                  ->where('status', '!=', 'draft');
+                  ->where('status', 'approved'); // Only final approved by GA
 
         if ($user->hasRole('user')) {
             $query->where('user_id', $user->id);
@@ -61,8 +75,7 @@ class RequestListExport implements FromCollection, WithHeadings, WithEvents, Wit
         // 1. Build Query
         $user = Auth::user();
         $query = Request::with(['user', 'branch', 'items.item'])
-                  ->where('status', '!=', 'rejected')
-                  ->where('status', '!=', 'draft');
+                  ->where('status', 'approved'); // Only final approved by GA
 
         if ($user->hasRole('user')) {
             $query->where('user_id', $user->id);
@@ -95,7 +108,8 @@ class RequestListExport implements FromCollection, WithHeadings, WithEvents, Wit
              if (empty($category) || $category === 'UNCATEGORIZED') {
                  $category = \App\Models\Item::detectCategory($item->item->name);
              }
-             return $category;
+             // Normalize category to prevent duplicates
+             return $this->normalizeCategory($category);
         });
 
         $exportData = collect();
@@ -192,8 +206,7 @@ class RequestListExport implements FromCollection, WithHeadings, WithEvents, Wit
 
                 // Strategy 1: Find ANY request matching the filter that was created by a Staff
                 $query = \App\Models\Request::with(['user'])
-                    ->where('status', '!=', 'rejected')
-                    ->where('status', '!=', 'draft');
+                    ->where('status', 'approved'); // Only final approved by GA
                 
                 if (Auth::user()->hasRole('user')) $query->where('user_id', Auth::user()->id);
                 elseif (Auth::user()->hasRole('admin_1')) $query->where('branch_id', Auth::user()->branch_id);

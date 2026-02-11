@@ -28,12 +28,26 @@ class RequestRecapExport implements FromCollection, WithHeadings, WithEvents, Wi
         $this->branches = $this->getBranches();
     }
 
+    protected function normalizeCategory($category)
+    {
+        // Normalize category variations to standard Indonesian names
+        $categoryMap = [
+            'electronics' => 'Elektronik',
+            'elektronik' => 'Elektronik',
+            'stationery' => 'Alat Tulis Kantor',
+            'furniture' => 'Peralatan Kantor',
+            'cleaning' => 'Perlengkapan Kebersihan',
+        ];
+        
+        $lower = strtolower($category);
+        return $categoryMap[$lower] ?? $category;
+    }
+    
     protected function getBranches()
     {
         // "Active Requests" logic:
         $reqQuery = \App\Models\Request::with('branch')
-            ->where('status', '!=', 'rejected')
-            ->where('status', '!=', 'draft');
+            ->where('status', 'approved'); // Only final approved by GA
             
         if ($this->locationType) {
             $reqQuery->whereHas('branch', function($b) {
@@ -58,7 +72,7 @@ class RequestRecapExport implements FromCollection, WithHeadings, WithEvents, Wi
         
         $query = RequestItem::with(['item', 'request.branch', 'request.user']) 
             ->whereHas('request', function($q) use ($user) {
-                $q->where('status', '!=', 'rejected')->where('status', '!=', 'draft');
+                $q->where('status', 'approved'); // Only final approved by GA
                 
                 if ($user->hasRole('user')) {
                     $q->where('user_id', $user->id);
@@ -87,7 +101,8 @@ class RequestRecapExport implements FromCollection, WithHeadings, WithEvents, Wi
             if (empty($category) || $category === 'UNCATEGORIZED') {
                 $category = \App\Models\Item::detectCategory($rItem->item->name);
             }
-            return $category;
+            // Normalize category to prevent duplicates
+            return $this->normalizeCategory($category);
         });
 
         $exportData = new Collection();
@@ -183,8 +198,7 @@ class RequestRecapExport implements FromCollection, WithHeadings, WithEvents, Wi
 
                 // Strategy 1: Find ANY request matching the filter that was created by a Staff
                 $query = \App\Models\Request::with(['user'])
-                    ->where('status', '!=', 'rejected')
-                    ->where('status', '!=', 'draft');
+                    ->where('status', 'approved'); // Only final approved by GA
                 
                 if ($this->locationType) {
                      $query->whereHas('branch', function($q) { $q->where('location_type', $this->locationType); });
