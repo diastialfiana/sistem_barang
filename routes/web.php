@@ -54,6 +54,11 @@ Route::middleware(['auth', 'role:super_admin|admin_1|admin_2'])->group(function 
     Route::get('items/export/pdf', [\App\Http\Controllers\ItemController::class, 'exportPdf'])->name('items.export.pdf');
     Route::get('items/export/excel', [\App\Http\Controllers\ItemController::class, 'exportExcel'])->name('items.export.excel');
     
+    // Item Import Routes
+    Route::post('items/import/preview', [\App\Http\Controllers\ItemController::class, 'previewImport'])->name('items.import.preview');
+    Route::post('items/import/process', [\App\Http\Controllers\ItemController::class, 'processImport'])->name('items.import.process');
+    Route::get('items/import/template', [\App\Http\Controllers\ItemController::class, 'downloadTemplate'])->name('items.import.template');
+    
     Route::resource('items', \App\Http\Controllers\ItemController::class);
 });
 
