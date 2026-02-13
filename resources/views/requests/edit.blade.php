@@ -1,7 +1,6 @@
 <x-app-layout>
     <div class="max-w-6xl mx-auto" x-data="requestForm()">
         
-        <!-- Header Section -->
         <div class="mb-8">
             <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">
                 Edit Request <span class="text-blue-600">Barang</span>
@@ -11,7 +10,6 @@
             </p>
         </div>
 
-        <!-- Main Form Card -->
         <div class="bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-100 overflow-hidden relative">
             <div class="h-1 bg-gradient-to-r from-blue-500 to-indigo-600 w-full"></div>
 
@@ -33,7 +31,6 @@
                     </div>
                 @endif
 
-                <!-- Global Fields -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10 pb-8 border-b border-slate-50">
                     <div class="md:col-span-1">
                         <label class="block text-sm font-bold text-slate-700 mb-2">Tanggal Request</label>
@@ -48,7 +45,6 @@
                     </div>
                 </div>
 
-                <!-- Items Section -->
                 <div class="space-y-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -64,7 +60,7 @@
                     <div class="space-y-4">
                         <template x-for="(row, index) in rows" :key="row.id">
                             <div class="bg-slate-50/50 rounded-2xl p-6 border border-slate-200 shadow-sm relative group hover:border-blue-200 transition-colors">
-                                <!-- Remove Button -->
+                              
                                 <button type="button" @click="removeRow(index)" x-show="rows.length > 1"
                                     class="absolute -top-3 -right-3 bg-white text-red-500 hover:text-red-700 rounded-full p-2 shadow-sm border border-slate-100 transition-transform hover:scale-110">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -73,7 +69,7 @@
                                 </button>
 
                                 <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
-                                    <!-- Item Select -->
+                                 
                                     <div class="md:col-span-4">
                                         <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nama Barang</label>
                                         <div class="relative">
@@ -93,7 +89,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- Stock (Readonly) -->
                                     <div class="md:col-span-2">
                                         <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Stok</label>
                                         <div class="relative">
@@ -105,7 +100,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- Quantity -->
                                     <div class="md:col-span-2">
                                         <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Qty</label>
                                         <input type="number" :name="`items[${index}][quantity]`" 
@@ -120,7 +114,6 @@
                                         </span>
                                     </div>
 
-                                    <!-- Due Date -->
                                     <div class="md:col-span-2">
                                         <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Kirim Tgl</label>
                                         <input type="date" :name="`items[${index}][due_date]`" 
@@ -128,8 +121,7 @@
                                             class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring focus:ring-blue-100 text-slate-700 text-sm"
                                             required>
                                     </div>
-                                    
-                                     <!-- Notes -->
+                                  
                                      <div class="md:col-span-2">
                                         <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ket.</label>
                                         <input type="text" :name="`items[${index}][notes]`" 

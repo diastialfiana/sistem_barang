@@ -272,7 +272,7 @@ class RequestController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        if (in_array($request->status, ['approved', 'rejected'])) {
+        if (!in_array($request->status, ['draft', 'pending_spv'])) {
             return back()->with('error', 'Cannot edit request with status: ' . $request->status);
         }
 
@@ -284,7 +284,7 @@ class RequestController extends Controller
 
     public function update(Request $httpRequest, RequestModel $request)
     {
-        if (in_array($request->status, ['approved', 'rejected'])) {
+        if (!in_array($request->status, ['draft', 'pending_spv'])) {
              return back()->with('error', 'Cannot edit request with status: ' . $request->status);
         }
 
@@ -323,7 +323,7 @@ class RequestController extends Controller
 
     public function destroy(RequestModel $request)
     {
-        if (in_array($request->status, ['approved', 'rejected'])) {
+        if (!in_array($request->status, ['draft', 'pending_spv'])) {
              return back()->with('error', 'Cannot delete request with status: ' . $request->status);
         }
 

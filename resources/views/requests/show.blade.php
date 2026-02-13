@@ -79,8 +79,8 @@
 
         <!-- Action Buttons -->
         <div class="flex gap-4 justify-end mb-10">
-            <!-- Edit/Delete for Staff (Requester) - Restrict to pending only -->
-            @if(Auth::id() == $request->user_id && !in_array($request->status, ['approved', 'rejected']))
+            <!-- Edit/Delete for Staff (Requester) - Restrict to pending/draft only -->
+            @if(Auth::id() == $request->user_id && in_array($request->status, ['draft', 'pending_spv']))
                 <form action="{{ route('requests.destroy', $request->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus request ini?');">
                     @csrf
                     @method('DELETE')
@@ -93,8 +93,8 @@
                 </a>
             @endif
 
-            <!-- Edit/Delete for SPV (Admin 1) - Restrict to pending only -->
-            @if(Auth::user()->hasRole('admin_1') && Auth::user()->branch_id == $request->branch_id && !in_array($request->status, ['approved', 'rejected']))
+            <!-- Edit/Delete for SPV (Admin 1) - Restrict to pending/draft only -->
+            @if(Auth::user()->hasRole('admin_1') && Auth::user()->branch_id == $request->branch_id && in_array($request->status, ['draft', 'pending_spv']))
                 <form action="{{ route('requests.destroy', $request->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus request ini?');">
                     @csrf
                     @method('DELETE')

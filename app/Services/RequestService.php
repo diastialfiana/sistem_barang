@@ -180,7 +180,7 @@ class RequestService
     {
         // Validation: Logic to ensure only Owner or SPV can edit
         // Restricted to pending statuses only.
-        if (in_array($request->status, ['approved', 'rejected'])) {
+        if (!in_array($request->status, ['draft', 'pending_spv'])) {
             throw new Exception("Cannot edit request with status: {$request->status}");
         }
         
@@ -218,7 +218,7 @@ class RequestService
     public function deleteRequest(Request $request, User $actor)
     {
         // Restricted to pending statuses only.
-        if (in_array($request->status, ['approved', 'rejected'])) {
+        if (!in_array($request->status, ['draft', 'pending_spv'])) {
             throw new Exception("Cannot delete request with status: {$request->status}");
         }
 
