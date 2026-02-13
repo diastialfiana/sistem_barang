@@ -27,10 +27,8 @@ class RequestController extends Controller
         } elseif ($user->hasRole('admin_1')) {
             $query->where('branch_id', $user->branch_id);
         } elseif ($user->hasRole('admin_2')) {
-            // MVP
         }
 
-        // Filter: Location Type (Dalam Kota / Luar Kota)
         if ($request->has('location_type') && in_array($request->location_type, ['dalam_kota', 'luar_kota'])) {
             $query->whereHas('branch', function($q) use ($request) {
                 $q->where('location_type', $request->location_type);
@@ -44,15 +42,18 @@ class RequestController extends Controller
                   ->whereYear('created_at', $date->year);
         }
 
+        // Filter: Status
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
+        }
+
         $requests = $query->orderBy('created_at', 'desc')->paginate(10);
         return view('requests.index', compact('requests'));
     }
-    
-    // ... create, store, etc ...
 
     public function exportRecap(Request $request)
     {
-        $locationType = $request->query('location_type'); // 'dalam_kota' or 'luar_kota' or null
+        $locationType = $request->query('location_type'); 
         $month = $request->query('month');
         
         $filename = 'Recap-Request-' . ($locationType ? ucfirst(str_replace('_', ' ', $locationType)) : 'All');
@@ -83,21 +84,19 @@ class RequestController extends Controller
             'items.*.notes' => 'nullable|string',
         ]);
 
-        // Validation & Item Mapping
+       
         foreach ($data['items'] as $index => &$itemData) {
-            // Try to find item by name
             $item = Item::where('name', $itemData['item_name'])->first();
             
             if ($item) {
                 $itemData['item_id'] = $item->id;
-                // Only check stock if Item exists in DB
                 if ($itemData['quantity'] > $item->stock) {
                     return back()
                         ->withInput()
                         ->withErrors(['items.' . $index . '.quantity' => "Stok tidak cukup untuk {$item->name}. Tersedia: {$item->stock}"]);
                 }
             } else {
-                $itemData['item_id'] = null; // Custom item
+                $itemData['item_id'] = null; 
             }
         }
 
@@ -158,9 +157,7 @@ class RequestController extends Controller
 
     public function export(RequestModel $request)
     {
-        // ... existing single export logic ...
         if (!Auth::user()->hasAnyRole(['super_admin', 'admin_1', 'admin_2'])) {
-             // Let user export their own? For now restrict.
              if ($request->user_id !== Auth::id()) abort(403);
         }
 
@@ -178,24 +175,22 @@ class RequestController extends Controller
     {
         $user = Auth::user();
         $query = RequestModel::with(['user', 'branch', 'items.item', 'approvals.approver'])
-            ->where('status', 'approved'); // Only show approved requests
+            ->where('status', 'approved'); 
 
         if ($user->hasRole('user')) {
             $query->where('user_id', $user->id);
         } elseif ($user->hasRole('admin_1')) {
             $query->where('branch_id', $user->branch_id);
         } elseif ($user->hasRole('admin_2')) {
-             // KA logic
+           
         }
         
-        // Filter: Location Type (Same as Index/Recap)
         if ($request->has('location_type') && in_array($request->location_type, ['dalam_kota', 'luar_kota'])) {
             $query->whereHas('branch', function($q) use ($request) {
                 $q->where('location_type', $request->location_type);
             });
         }
         
-        // Filter: Month
         if ($request->has('month') && $request->month) {
             $date = \Carbon\Carbon::createFromFormat('Y-m', $request->month);
             $query->whereMonth('created_at', $date->month)
@@ -204,11 +199,8 @@ class RequestController extends Controller
         
         $requests = $query->orderBy('created_at', 'desc')->get();
 
-        // --- Requester Logic (Copied from Excel Export) ---
         $requesterUser = null;
 
-        // Strategy 1: Find ANY request matching the filter that was created by a Staff
-        // We can check the already fetched $requests collection
         $staffReq = $requests->first(function($r) {
             return $r->user && $r->user->hasRole('user');
         });
@@ -216,8 +208,6 @@ class RequestController extends Controller
         if ($staffReq && $staffReq->user) {
              $requesterUser = $staffReq->user;
         }
-
-        // Strategy 2: If no staff found in requests, find ANY Staff in the relevant branches
         if (!$requesterUser) {
              $branchIds = \App\Models\Branch::query();
              if ($request->has('location_type')) {
@@ -233,23 +223,17 @@ class RequestController extends Controller
              }
         }
 
-        // Strategy 3: Find ANY Staff user in the system (Fallback)
         if (!$requesterUser) {
             $anyStaff = \App\Models\User::role('user')->first();
             if ($anyStaff) $requesterUser = $anyStaff;
         }
 
-        // Final Fallback: Auth user
         if (!$requesterUser) $requesterUser = Auth::user();
 
-
-        // --- Officials Logic ---
-        $spvUser = \App\Models\User::role('admin_1')->first(); // Fallback
+        $spvUser = \App\Models\User::role('admin_1')->first(); 
         $kaUser = \App\Models\User::role('admin_2')->first();
         $gaUser = \App\Models\User::role('super_admin')->first();
         
-        // Try to get specific Branch SPV from the requests context
-        // If requests exist, use the first request's branch to find the SPV
         $firstReq = $requests->first();
         if ($firstReq && $firstReq->branch_id) {
             $branchSpv = \App\Models\User::role('admin_1')->where('branch_id', $firstReq->branch_id)->first();
@@ -283,30 +267,23 @@ class RequestController extends Controller
     }
     public function edit(RequestModel $request)
     {
-        // Authorization check
         $user = Auth::user();
         if ($user->id !== $request->user_id && !($user->hasRole('admin_1') && $user->branch_id === $request->branch_id)) {
             abort(403, 'Unauthorized');
         }
 
-        // Restricted to pending statuses only.
         if (in_array($request->status, ['approved', 'rejected'])) {
             return back()->with('error', 'Cannot edit request with status: ' . $request->status);
         }
 
         $request->load(['items']);
-        $items = Item::all(); // Available items for selection
+        $items = Item::all(); 
         
         return view('requests.edit', compact('request', 'items'));
     }
 
     public function update(Request $httpRequest, RequestModel $request)
     {
-        // Fixed: Renamed arguments to match Route Model Binding ({request}) which requires the variable to be named $request.
-        // $httpRequest is the Input/Form data.
-        // $request is the RequestModel instance from DB.
-
-        // Restricted to pending statuses only.
         if (in_array($request->status, ['approved', 'rejected'])) {
              return back()->with('error', 'Cannot edit request with status: ' . $request->status);
         }
@@ -320,14 +297,12 @@ class RequestController extends Controller
             'items.*.notes' => 'nullable|string',
         ]);
 
-        // Validation & Item Mapping (Copy from store)
         foreach ($data['items'] as $index => &$itemData) {
             $item = Item::where('name', $itemData['item_name'])->first();
             
             if ($item) {
                 $itemData['item_id'] = $item->id;
-                // Stock check? Maybe warn but allow as per store?
-                // For simplified CRUD, we assume valid input or reuse logic.
+               
                 if ($itemData['quantity'] > $item->stock) {
                      return back()
                         ->withInput()
@@ -348,7 +323,6 @@ class RequestController extends Controller
 
     public function destroy(RequestModel $request)
     {
-        // Restricted to pending statuses only.
         if (in_array($request->status, ['approved', 'rejected'])) {
              return back()->with('error', 'Cannot delete request with status: ' . $request->status);
         }

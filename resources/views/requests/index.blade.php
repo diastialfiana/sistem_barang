@@ -9,6 +9,15 @@
                 <option value="luar_kota" {{ request('location_type') == 'luar_kota' ? 'selected' : '' }}>Luar Kota</option>
             </select>
             <input type="month" name="month" value="{{ request('month') }}" class="border-gray-300 rounded-md shadow-sm text-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500" onchange="this.form.submit()">
+            <select name="status" class="border-gray-300 rounded-md shadow-sm text-sm py-2 px-3 pr-8 focus:ring-indigo-500 focus:border-indigo-500" onchange="this.form.submit()">
+                <option value="">Semua Status</option>
+                <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Draft</option>
+                <option value="pending_spv" {{ request('status') == 'pending_spv' ? 'selected' : '' }}>Menunggu SPV</option>
+                <option value="pending_ka" {{ request('status') == 'pending_ka' ? 'selected' : '' }}>Menunggu KA</option>
+                <option value="pending_ga" {{ request('status') == 'pending_ga' ? 'selected' : '' }}>Menunggu GA</option>
+                <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Selesai</option>
+                <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Ditolak</option>
+            </select>
         </form>
 
         <div class="flex space-x-2">

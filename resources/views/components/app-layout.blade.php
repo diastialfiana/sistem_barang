@@ -7,11 +7,9 @@
 
     <title>{{ config('app.name', 'Procurement System') }}</title>
 
-    <!-- Tailwind & Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Alpine JS -->
     <script src="//unpkg.com/alpinejs" defer></script>
     
     <style>
@@ -29,13 +27,11 @@
 </head>
 <body class="bg-gray-50 font-sans antialiased text-slate-600">
     <div class="min-h-screen flex transition-all duration-300" x-data="{ sidebarOpen: true }">
-        
-        <!-- Sidebar -->
+     
         <aside 
             class="bg-white border-r border-gray-200 fixed lg:static inset-y-0 left-0 z-30 w-72 transform transition-transform duration-300 ease-in-out overflow-y-auto"
             :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen, 'lg:translate-x-0': true}"
         >
-            <!-- Logo Area -->
             <div class="h-20 flex items-center px-8 border-b border-gray-100">
                 <div class="flex items-center gap-3">
                     <img src="{{ asset('images/jayatama.png') }}" alt="Logo" class="h-12 w-auto object-contain">
@@ -46,7 +42,6 @@
                 </div>
             </div>
 
-            <!-- Navigation -->
             <nav class="mt-6 px-0 space-y-1">
                 
                 <p class="px-8 text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 mt-4">Menu Utama</p>
@@ -86,7 +81,6 @@
 
             </nav>
 
-            <!-- User Profile (Bottom) -->
             <div class="absolute bottom-0 w-full border-t border-gray-100 p-6 bg-gray-50/50">
                 <div class="flex items-center gap-3">
                     <div class="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold border border-white shadow-sm">
@@ -106,9 +100,8 @@
             </div>
         </aside>
 
-        <!-- Main Content Wrapper -->
         <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-gray-50">
-            <!-- Mobile Toggle -->
+          
             <div class="lg:hidden p-4 bg-white border-b border-gray-200 flex justify-between items-center">
                 <img src="{{ asset('images/jayatama.png') }}" alt="Logo" class="h-8 w-auto">
                 <button @click="sidebarOpen = !sidebarOpen" class="p-2 rounded-md hover:bg-gray-100 text-slate-600">
@@ -118,7 +111,7 @@
 
             <div class="flex-1 overflow-auto p-4 md:p-8">
                 
-                <!-- Alerts -->
+             
                 @if(session('success'))
                     <div class="mb-6 bg-white border-l-4 border-green-500 p-4 rounded-lg shadow-sm flex items-start gap-3" role="alert">
                         <div class="text-green-500">

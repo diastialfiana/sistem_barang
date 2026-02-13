@@ -52,7 +52,6 @@
             $branchLabel = $requests->first()->branch->name;
         }
 
-        // Data passed from controller: $requesterUser, $spvUser, $kaUser, $gaUser
         $requesterName = $requesterUser->name ?? '-';
         $company = $requesterUser->company ?? 'Bank Mega';
         $reqDate = date('d F Y');
@@ -70,7 +69,7 @@
              if (empty($category) || $category === 'UNCATEGORIZED') {
                  $category = \App\Models\Item::detectCategory($item->item->name);
              }
-             // Normalize category to prevent duplicates
+             
              $categoryMap = [
                  'electronics' => 'Elektronik',
                  'elektronik' => 'Elektronik',

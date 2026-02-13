@@ -9,7 +9,6 @@
         </div>
     </div>
 
-    <!-- Filters -->
     <div class="bg-white p-4 rounded-lg shadow mb-6">
         <form method="GET" action="{{ route('reports.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
@@ -36,7 +35,6 @@
         </form>
     </div>
 
-    <!-- Table -->
     <div class="bg-white shadow-md rounded-lg overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
