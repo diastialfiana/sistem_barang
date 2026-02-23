@@ -27,6 +27,16 @@
         <div class="p-10">
             <h2 class="text-2xl font-bold text-slate-900 mb-1">Selamat Datang Kembali</h2>
             <p class="text-slate-500 text-sm mb-8">Silakan masuk menggunakan NIP Anda.</p>
+
+            @if (session('success'))
+                <div class="mb-6 bg-green-50 border border-green-100 p-4 rounded-xl flex items-start gap-3">
+                    <svg class="w-5 h-5 text-green-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <div>
+                        <p class="text-sm text-green-700 font-bold">Berhasil</p>
+                        <p class="text-xs text-green-600 mt-1">{{ session('success') }}</p>
+                    </div>
+                </div>
+            @endif
             
             @if ($errors->any())
                 <div class="mb-6 bg-red-50 border border-red-100 p-4 rounded-xl flex items-start gap-3">
@@ -74,7 +84,7 @@
                         <input type="checkbox" name="remember" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300">
                         <span class="text-sm text-slate-600">Ingat Saya</span>
                     </label>
-                    <a href="#" class="text-sm font-semibold text-blue-600 hover:text-blue-700">Lupa Password?</a>
+                    <a href="{{ route('password.request') }}" class="text-sm font-semibold text-blue-600 hover:text-blue-700">Lupa Password?</a>
                 </div>
 
                 <button type="submit" class="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg shadow-slate-900/10 transition-all hover:scale-[1.02] active:scale-[0.98]">

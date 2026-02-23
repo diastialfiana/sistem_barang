@@ -8,6 +8,7 @@
             itemCategory: '',
             itemUnit: '',
             itemStock: 0,
+            itemBranchId: '',
             
             // Import states
             importModalOpen: false,
@@ -62,6 +63,7 @@
                 this.itemCategory = '';
                 this.itemUnit = '';
                 this.itemStock = 0;
+                this.itemBranchId = '';
                 this.modalOpen = true;
             },
             
@@ -72,6 +74,7 @@
                 this.itemCategory = item.category || '';
                 this.itemUnit = item.unit;
                 this.itemStock = item.stock;
+                this.itemBranchId = item.branch_id || '';
                 this.modalOpen = true;
             },
             
@@ -221,7 +224,7 @@
             </div>
         @endif
 
-        <!-- Filters: Area & Periode -->
+        <!-- Filters: Cabang & Periode -->
         <form method="GET" action="{{ route('items.index') }}" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row gap-4 items-center">
             <!-- Maintain Search query if exists -->
             @if(request('search'))
@@ -229,11 +232,12 @@
             @endif
 
             <div class="flex items-center gap-2">
-                <label class="font-bold text-slate-700">Area:</label>
-                <select name="area" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold" onchange="this.form.submit()">
-                    <option value="">Semua Area</option>
-                    <option value="Gudang Pusat" {{ request('area') == 'Gudang Pusat' ? 'selected' : '' }}>Gudang Pusat</option>
-                    <option value="Cabang A" {{ request('area') == 'Cabang A' ? 'selected' : '' }}>Cabang A</option>
+                <label class="font-bold text-slate-700">Cabang:</label>
+                <select name="branch_id" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold" onchange="this.form.submit()">
+                    <option value="">Semua Cabang</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
+                    @endforeach
                 </select>
             </div>
             <div class="flex items-center gap-2">
@@ -251,6 +255,7 @@
                         <tr>
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">No</th>
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nama Barang</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cabang</th>
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Satuan</th>
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Stock (Awal)</th>
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Keluar</th>
@@ -261,23 +266,42 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse($items as $item)
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-6 py-4 text-slate-500 font-bold">
-                                {{ $loop->iteration }}
+                        @php
+                            $hasBreakdown = $item->branch_breakdown->isNotEmpty() || $item->branch_pending->isNotEmpty();
+                            $activeBranches = $branches->filter(function($b) use ($item) {
+                                return isset($item->branch_breakdown[$b->id]) || isset($item->branch_pending[$b->id]);
+                            });
+                            
+                            // If filtering by branch, only show that branch if it has data, AND always show warehouse
+                            if (request('branch_id')) {
+                                $activeBranches = $activeBranches->where('id', request('branch_id'));
+                            }
+                        @endphp
+                        
+                        <!-- Warehouse Row -->
+                        <tr class="hover:bg-slate-50 transition-colors border-t-2 border-slate-200">
+                            <td class="px-6 py-4 text-slate-500 font-bold" rowspan="{{ $activeBranches->count() + 1 }}">
+                                {{ ($items->currentPage() - 1) * $items->perPage() + $loop->iteration }}
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-6 py-4" rowspan="{{ $activeBranches->count() + 1 }}">
                                 <span class="font-bold text-slate-700">{{ $item->name }}</span>
+                                <div class="text-[10px] text-slate-400 font-bold mt-1 uppercase">{{ $item->category }}</div>
                             </td>
                             <td class="px-6 py-4">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                    Gudang Pusat
+                                </span>
+                            </td>
+                            <td class="px-6 py-4" rowspan="{{ $activeBranches->count() + 1 }}">
                                 <span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">{{ $item->unit }}</span>
                             </td>
                             <td class="px-6 py-4 text-center font-bold text-slate-700">
                                 {{ $item->stock + ($item->total_keluar ?? 0) }}
                             </td>
-                            <td class="px-6 py-4 text-center font-bold text-red-600 bg-red-50 rounded-lg">
+                            <td class="px-6 py-4 text-center font-bold text-slate-400 bg-slate-50/50">
                                 {{ $item->total_keluar ?? 0 }}
                             </td>
-                             <td class="px-6 py-4 text-center">
+                            <td class="px-6 py-4 text-center">
                                 @if($item->stock <= 5)
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-100">
                                         {{ $item->stock }}
@@ -285,11 +309,12 @@
                                 @else
                                     <span class="font-bold text-slate-700">{{ $item->stock }}</span>
                                 @endif
+                                <div class="text-[10px] text-slate-400 font-bold mt-1">READY</div>
                             </td>
-                            <td class="px-6 py-4 text-center font-bold text-blue-600 bg-blue-50 rounded-lg">
-                                {{ $item->total_request ?? 0 }}
+                            <td class="px-6 py-4 text-center font-bold text-blue-600/30 bg-blue-50/30">
+                                -
                             </td>
-                            <td class="px-6 py-4 text-right">
+                            <td class="px-6 py-4 text-right" rowspan="{{ $activeBranches->count() + 1 }}">
                                 <div class="flex justify-end items-center gap-2">
                                     <button @click="openEditModal({{ $item }})" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
@@ -304,9 +329,35 @@
                                 </div>
                             </td>
                         </tr>
+
+                        <!-- Branch Rows -->
+                        @foreach($activeBranches as $branch)
+                        <tr class="hover:bg-slate-50 transition-colors border-t border-slate-100">
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-600 border border-blue-100">
+                                    {{ $branch->name }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-center font-bold text-slate-400 italic">
+                                -
+                            </td>
+                            <td class="px-6 py-4 text-center font-bold text-red-600/30">
+                                -
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="font-bold text-slate-700">{{ $item->branch_breakdown[$branch->id] ?? 0 }}</span>
+                                <div class="text-[10px] text-slate-400 font-bold mt-1 uppercase">READY</div>
+                            </td>
+                            <td class="px-6 py-4 text-center font-bold text-blue-600 bg-blue-50 rounded-lg">
+                                {{ $item->branch_pending[$branch->id] ?? 0 }}
+                                <div class="text-[10px] text-blue-400 font-bold mt-1 uppercase">PENDING</div>
+                            </td>
+                        </tr>
+                        @endforeach
+
                         @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-12 text-center text-slate-400">
+                            <td colspan="9" class="px-6 py-12 text-center text-slate-400">
                                 Tidak ada data barang ditemukan.
                             </td>
                         </tr>
@@ -370,6 +421,17 @@
                             </div>
                         </div>
 
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Cabang (Lokasi)</label>
+                            <select name="branch_id" x-model="itemBranchId" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-semibold text-slate-800 transition-all">
+                                <option value="">Gudang Pusat</option>
+                                @foreach($branches as $branch)
+                                    <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                                @endforeach
+                            </select>
+                            <p class="text-xs text-slate-500 mt-1">Kosongkan jika disimpan di Gudang Pusat</p>
+                        </div>
+
                         <div class="mt-8 flex gap-3 pt-4">
                             <button type="button" @click="modalOpen = false" class="flex-1 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold rounded-xl transition-colors">Batal</button>
                             <button type="submit" class="flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg shadow-slate-900/10 transition-all">Simpan Data</button>
@@ -395,6 +457,7 @@
                             <p class="text-sm text-blue-800 font-semibold mb-2">✅ Mudah! Pakai Excel sendiri:</p>
                             <ul class="text-sm text-blue-700 space-y-1 ml-4 list-disc">
                                 <li><strong>Nama Barang</strong>: boleh pakai header "Nama", "Barang", "Nama Barang", "Name", dll</li>
+                                <li><strong>Cabang</strong>: nama cabang yang terdaftar atau "Gudang Pusat"</li>
                                 <li><strong>Satuan</strong>: harus Pcs, Box, Rim, Pack, atau Unit</li>
                                 <li><strong>Stok</strong>: boleh pakai header "Stok", "Stock", "Qty", dll (angka)</li>
                                 <li class="text-blue-900 font-bold mt-2">Kategori otomatis terdeteksi!</li>
@@ -466,6 +529,7 @@
                                 <tr>
                                     <th class="px-4 py-3 text-left font-bold text-slate-600">Pilih</th>
                                     <th class="px-4 py-3 text-left font-bold text-slate-600">Nama Barang</th>
+                                    <th class="px-4 py-3 text-left font-bold text-slate-600">Cabang</th>
                                     <th class="px-4 py-3 text-left font-bold text-slate-600">Satuan</th>
                                     <th class="px-4 py-3 text-left font-bold text-slate-600">Stok</th>
                                     <th class="px-4 py-3 text-left font-bold text-slate-600">Kategori</th>
@@ -482,6 +546,9 @@
                                                    class="w-4 h-4 text-blue-600 rounded">
                                         </td>
                                         <td class="px-4 py-3 font-semibold" x-text="item.name"></td>
+                                        <td class="px-4 py-3">
+                                            <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-semibold" x-text="item.branch_name"></span>
+                                        </td>
                                         <td class="px-4 py-3" x-text="item.unit"></td>
                                         <td class="px-4 py-3" x-text="item.stock"></td>
                                         <td class="px-4 py-3">

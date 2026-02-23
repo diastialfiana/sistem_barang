@@ -19,15 +19,16 @@ class UserManagementController extends Controller
 
     public function index(Request $request)
     {
-        $query = User::with(['roles', 'branch']);
-
-        if ($request->filled('search')) {
-            $query->where(function($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('email', 'like', '%' . $request->search . '%')
-                  ->orWhere('nip', 'like', '%' . $request->search . '%');
-            });
-        }
+        // Join with roles table to sort by role name
+        $query = User::with(['roles', 'branch'])
+            ->select('users.*') // Select user fields to avoid collisions
+            ->leftJoin('model_has_roles', function($join) {
+                $join->on('users.id', '=', 'model_has_roles.model_id')
+                     ->where('model_has_roles.model_type', '=', User::class);
+            })
+            ->leftJoin('roles', 'model_has_roles.role_id', '=', 'roles.id')
+            ->orderByRaw("FIELD(roles.name, 'super_admin', 'admin_1', 'admin_2', 'user') ASC")
+            ->orderBy('created_at', 'desc'); // Secondary sort by newest
 
         if ($request->filled('role')) {
             $query->role($request->role);
@@ -57,23 +58,53 @@ class UserManagementController extends Controller
             'name' => 'required|string|max:255',
             'nip' => 'required|string|unique:users,nip',
             'email' => 'nullable|email|unique:users,email',
-            'password' => 'required|string|min:8',
+            'password' => 'nullable|string|min:8', // Made nullable
             'role' => 'required|exists:roles,name',
             'branch_id' => 'nullable|exists:branches,id',
+            'new_branch_name' => 'nullable|string', // Removed unique validation to allow flexible input
             'job_title' => 'nullable|string',
             'company' => 'nullable|string|max:255',
         ]);
 
         try {
+            // Handle Branch Logic: Create or Find
+            if ($request->filled('new_branch_name')) {
+                // Use firstOrCreate to avoid duplicates and handle existing names gracefully
+                $branch = \App\Models\Branch::firstOrCreate(
+                    ['name' => trim($data['new_branch_name'])],
+                    ['location_type' => 'dalam_kota'] // Default if creating new
+                );
+                $data['branch_id'] = $branch->id;
+            }
+
             // Assign a default email if not provided, using NIP
             if (empty($data['email'])) {
                 $data['email'] = $data['nip'] . '@internal.system';
+            }
+
+            // Default password to NIP if empty
+            if (empty($data['password'])) {
+                $data['password'] = $data['nip'];
             }
 
             $this->userService->createUser($data, 'super_admin');
             return redirect()->route('users.index')->with('success', 'User created successfully.');
         } catch (\Exception $e) {
             return back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
+    public function resetPassword(User $user)
+    {
+        try {
+            // Reset password to NIP
+            $user->update([
+                'password' => \Illuminate\Support\Facades\Hash::make($user->nip)
+            ]);
+            
+            return back()->with('success', 'Password reset to NIP successfully.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to reset password: ' . $e->getMessage());
         }
     }
 

@@ -15,6 +15,7 @@ class UserService
         return DB::transaction(function () use ($data, $creatorRole) {
             $user = User::create([
                 'name' => $data['name'],
+                'nip' => $data['nip'], // Added missing NIP field
                 'email' => $data['email'],
                 'password' => Hash::make($data['password']),
                 'branch_id' => $data['branch_id'] ?? null,

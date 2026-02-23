@@ -37,24 +37,85 @@ class InventoryExport implements FromCollection, WithHeadings, WithMapping, With
         $period = $this->request->input('period', date('Y-m'));
         [$year, $month] = explode('-', $period);
 
-        // Calculate 'keluar' (ALL approved requests, not just current period)
-        $data = $query->withSum(['requestItems as total_keluar' => function($q) {
-            $q->whereHas('request', function($r) {
+        $branch_id = $this->request->get('branch_id');
+
+        $items = $query->withSum(['requestItems as total_keluar' => function($q) use ($branch_id) {
+            $q->whereHas('request', function($r) use ($branch_id) {
                 $r->where('status', 'approved');
+                if ($branch_id) $r->where('branch_id', $branch_id);
             });
         }], 'quantity')
-        ->withSum(['requestItems as total_request' => function($q) use ($year, $month) {
-            $q->whereHas('request', function($r) use ($year, $month) {
+        ->withSum(['requestItems as total_request' => function($q) use ($year, $month, $branch_id) {
+            $q->whereHas('request', function($r) use ($year, $month, $branch_id) {
                 $r->whereIn('status', ['draft', 'pending_spv', 'pending_ka', 'pending_ga'])
                   ->whereYear('created_at', $year)
                   ->whereMonth('created_at', $month);
+                if ($branch_id) $r->where('branch_id', $branch_id);
             });
         }], 'quantity')
         ->orderBy('name')
         ->get();
+
+        $exportData = collect();
+        $branches = \App\Models\Branch::all();
+
+        foreach ($items as $item) {
+            // Get breakdown
+            $breakdown = \App\Models\RequestItem::selectRaw('branch_id, SUM(quantity) as total')
+                ->join('requests', 'request_items.request_id', '=', 'requests.id')
+                ->where('request_items.item_id', $item->id)
+                ->where('requests.status', 'approved')
+                ->groupBy('branch_id')
+                ->get()
+                ->pluck('total', 'branch_id');
+
+            $pending = \App\Models\RequestItem::selectRaw('branch_id, SUM(quantity) as total')
+                ->join('requests', 'request_items.request_id', '=', 'requests.id')
+                ->where('request_items.item_id', $item->id)
+                ->whereIn('requests.status', ['draft', 'pending_spv', 'pending_ka', 'pending_ga'])
+                ->whereYear('requests.created_at', $year)
+                ->whereMonth('requests.created_at', $month)
+                ->groupBy('branch_id')
+                ->get()
+                ->pluck('total', 'branch_id');
+
+            // Warehouse Row
+            $exportData->push([
+                'name' => $item->name,
+                'cabang' => 'Gudang Pusat',
+                'unit' => $item->unit,
+                'stock_awal' => $item->stock + ($item->total_keluar ?? 0),
+                'keluar' => $item->total_keluar ?? 0,
+                'sisa' => $item->stock,
+                'request' => '-',
+                'is_header' => true
+            ]);
+
+            // Branch Rows
+            $activeBranches = $branches->filter(function($b) use ($breakdown, $pending) {
+                return isset($breakdown[$b->id]) || isset($pending[$b->id]);
+            });
+
+            if ($branch_id) {
+                $activeBranches = $activeBranches->where('id', $branch_id);
+            }
+
+            foreach ($activeBranches as $branch) {
+                $exportData->push([
+                    'name' => '',
+                    'cabang' => $branch->name,
+                    'unit' => '',
+                    'stock_awal' => '-',
+                    'keluar' => '-',
+                    'sisa' => $breakdown[$branch->id] ?? 0,
+                    'request' => $pending[$branch->id] ?? 0,
+                    'is_header' => false
+                ]);
+            }
+        }
         
-        $this->rowCount = $data->count();
-        return $data;
+        $this->rowCount = $exportData->count();
+        return $exportData;
     }
 
     public function headings(): array
@@ -62,27 +123,39 @@ class InventoryExport implements FromCollection, WithHeadings, WithMapping, With
         return [
             'No',
             'Nama Barang',
+            'Cabang',
             'Satuan',
             'Stock (Awal)',
             'Keluar',
-            'Sisa',
-            'Request',
+            'Sisa (READY)',
+            'Request (PENDING)',
         ];
     }
 
-    public function map($item): array
+    public function map($row): array
     {
         static $no = 0;
-        $no++;
+        static $lastItem = '';
+
+        if ($row['is_header']) {
+            $no++;
+            $lastItem = $row['name'];
+            $displayNo = $no;
+            $displayName = $row['name'];
+        } else {
+            $displayNo = '';
+            $displayName = '';
+        }
         
         return [
-            $no,
-            $item->name,
-            $item->unit,
-            $item->stock + ($item->total_keluar ?? 0),
-            $item->total_keluar ?? 0,
-            $item->stock,
-            $item->total_request ?? 0,
+            $displayNo,
+            $displayName,
+            $row['cabang'],
+            $row['unit'],
+            $row['stock_awal'],
+            $row['keluar'],
+            $row['sisa'],
+            $row['request'],
         ];
     }
 
@@ -141,7 +214,7 @@ class InventoryExport implements FromCollection, WithHeadings, WithMapping, With
                 // KA
                 $sheet->setCellValue('E'.$nameRow, $kaUser ? $kaUser->name : '.....................');
                 $sheet->setCellValue('E'.($nameRow+1), 'NIP: ' . ($kaUser->nip ?? '..........'));
-                $sheet->setCellValue('E'.($nameRow+2), 'Kepala Area');
+                $sheet->setCellValue('E'.($nameRow+2), 'Kepala Cabang');
                 
                 // GA
                 $sheet->setCellValue('G'.$nameRow, $gaUser ? $gaUser->name : '.....................');

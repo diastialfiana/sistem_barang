@@ -23,6 +23,10 @@ Route::get('/', function () {
 Route::middleware('guest')->group(function () {
     Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('login', [AuthController::class, 'login']);
+
+    // Forgot Password Routes
+    Route::get('forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
+    Route::post('forgot-password', [AuthController::class, 'resetPasswordToNip'])->name('password.email');
 });
 
 Route::post('logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
@@ -45,6 +49,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'role:super_admin|admin_1|admin_2'])->group(function () {
+    Route::post('users/{user}/reset-password', [\App\Http\Controllers\UserManagementController::class, 'resetPassword'])->name('users.reset_password');
     Route::resource('users', \App\Http\Controllers\UserManagementController::class);
     // Report Routes
     Route::get('reports', [\App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');

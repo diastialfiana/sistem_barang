@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Item;
+use App\Models\Branch;
 use App\Imports\ItemsImport;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -21,27 +22,52 @@ class ItemController extends Controller
         $period = $request->input('period', date('Y-m'));
         [$year, $month] = explode('-', $period);
 
-        // Calculate 'keluar' (ALL approved requests, not just current period)
-        $items = $query->withSum(['requestItems as total_keluar' => function($q) {
-            $q->whereHas('request', function($r) {
+        $branch_id = $request->input('branch_id');
+
+        // Main Query
+        $items = $query->withSum(['requestItems as total_keluar' => function($q) use ($branch_id) {
+            $q->whereHas('request', function($r) use ($branch_id) {
                 $r->where('status', 'approved');
+                if ($branch_id) $r->where('branch_id', $branch_id);
             });
         }], 'quantity')
-        // Calculate 'pending_request' (requests not yet approved/rejected)
-        ->withSum(['requestItems as total_request' => function($q) use ($year, $month) {
-            $q->whereHas('request', function($r) use ($year, $month) {
-                // Assuming we want to see requests made in this period that are still pending
-                // Or maybe all pending requests regardless of period? 
-                // Context: User likely wants to see activity for the month.
+        ->withSum(['requestItems as total_request' => function($q) use ($year, $month, $branch_id) {
+            $q->whereHas('request', function($r) use ($year, $month, $branch_id) {
                 $r->whereIn('status', ['draft', 'pending_spv', 'pending_ka', 'pending_ga'])
                   ->whereYear('created_at', $year)
                   ->whereMonth('created_at', $month);
+                if ($branch_id) $r->where('branch_id', $branch_id);
             });
         }], 'quantity')
         ->orderBy('name')
         ->paginate(10);
 
-        return view('items.index', compact('items'));
+        // Fetch Branch Breakdown for the items in current page
+        $branches = Branch::all();
+        
+        foreach ($items as $item) {
+            // Get quantity per branch for this item (only approved)
+            $item->branch_breakdown = \App\Models\RequestItem::selectRaw('branch_id, SUM(quantity) as total')
+                ->join('requests', 'request_items.request_id', '=', 'requests.id')
+                ->where('request_items.item_id', $item->id)
+                ->where('requests.status', 'approved')
+                ->groupBy('branch_id')
+                ->get()
+                ->pluck('total', 'branch_id');
+                
+             // Get pending requests per branch for this item
+             $item->branch_pending = \App\Models\RequestItem::selectRaw('branch_id, SUM(quantity) as total')
+                ->join('requests', 'request_items.request_id', '=', 'requests.id')
+                ->where('request_items.item_id', $item->id)
+                ->whereIn('requests.status', ['draft', 'pending_spv', 'pending_ka', 'pending_ga'])
+                ->whereYear('requests.created_at', $year)
+                ->whereMonth('requests.created_at', $month)
+                ->groupBy('branch_id')
+                ->get()
+                ->pluck('total', 'branch_id');
+        }
+
+        return view('items.index', compact('items', 'branches'));
     }
 
     public function store(Request $request)
@@ -50,6 +76,7 @@ class ItemController extends Controller
             'name' => 'required|string|max:255',
             'unit' => 'required|string|max:50',
             'stock' => 'required|integer|min:0',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         Item::create($request->all());
@@ -63,6 +90,7 @@ class ItemController extends Controller
             'name' => 'required|string|max:255',
             'unit' => 'required|string|max:50',
             'stock' => 'required|integer|min:0',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         $item->update($request->all());
@@ -92,23 +120,47 @@ class ItemController extends Controller
         $period = $request->input('period', date('Y-m'));
         [$year, $month] = explode('-', $period);
 
-        // Calculate 'keluar' (ALL approved requests, not just current period)
-        $items = $query->withSum(['requestItems as total_keluar' => function($q) {
-            $q->whereHas('request', function($r) {
+        $branch_id = $request->input('branch_id');
+
+        $items = $query->withSum(['requestItems as total_keluar' => function($q) use ($branch_id) {
+            $q->whereHas('request', function($r) use ($branch_id) {
                 $r->where('status', 'approved');
+                if ($branch_id) $r->where('branch_id', $branch_id);
             });
         }], 'quantity')
-        ->withSum(['requestItems as total_request' => function($q) use ($year, $month) {
-            $q->whereHas('request', function($r) use ($year, $month) {
+        ->withSum(['requestItems as total_request' => function($q) use ($year, $month, $branch_id) {
+            $q->whereHas('request', function($r) use ($year, $month, $branch_id) {
                 $r->whereIn('status', ['draft', 'pending_spv', 'pending_ka', 'pending_ga'])
                   ->whereYear('created_at', $year)
                   ->whereMonth('created_at', $month);
+                if ($branch_id) $r->where('branch_id', $branch_id);
             });
         }], 'quantity')
         ->orderBy('name')
         ->get();
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.inventory_pdf', compact('items'));
+        $branches = Branch::all();
+        foreach ($items as $item) {
+            $item->branch_breakdown = \App\Models\RequestItem::selectRaw('branch_id, SUM(quantity) as total')
+                ->join('requests', 'request_items.request_id', '=', 'requests.id')
+                ->where('request_items.item_id', $item->id)
+                ->where('requests.status', 'approved')
+                ->groupBy('branch_id')
+                ->get()
+                ->pluck('total', 'branch_id');
+                
+             $item->branch_pending = \App\Models\RequestItem::selectRaw('branch_id, SUM(quantity) as total')
+                ->join('requests', 'request_items.request_id', '=', 'requests.id')
+                ->where('request_items.item_id', $item->id)
+                ->whereIn('requests.status', ['draft', 'pending_spv', 'pending_ka', 'pending_ga'])
+                ->whereYear('requests.created_at', $year)
+                ->whereMonth('requests.created_at', $month)
+                ->groupBy('branch_id')
+                ->get()
+                ->pluck('total', 'branch_id');
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.inventory_pdf', compact('items', 'branches'));
         return $pdf->download('Inventory-'.date('Y-m-d').'.pdf');
     }
 
@@ -189,6 +241,7 @@ class ItemController extends Controller
             'items.*.unit' => 'required|string|max:50',
             'items.*.stock' => 'required|integer|min:0',
             'items.*.category' => 'nullable|string',
+            'items.*.branch_id' => 'nullable|exists:branches,id',
         ]);
 
         try {
@@ -196,8 +249,11 @@ class ItemController extends Controller
             $skipped = 0;
             
             foreach ($request->items as $itemData) {
-                // Check if already exists (case-insensitive)
-                $exists = Item::whereRaw('LOWER(name) = ?', [strtolower(trim($itemData['name']))])->exists();
+                // Check if already exists (case-insensitive) - include branch_id in check
+                $branchId = $itemData['branch_id'] ?? null;
+                $exists = Item::whereRaw('LOWER(name) = ?', [strtolower(trim($itemData['name']))])
+                    ->where('branch_id', $branchId)
+                    ->exists();
                 
                 if ($exists && !($request->input('force_duplicate', false))) {
                     $skipped++;
@@ -209,6 +265,7 @@ class ItemController extends Controller
                     'unit' => $itemData['unit'],
                     'stock' => $itemData['stock'],
                     'category' => $itemData['category'] ?? Item::detectCategory($itemData['name']),
+                    'branch_id' => $branchId,
                 ]);
                 
                 $imported++;
@@ -231,12 +288,16 @@ class ItemController extends Controller
 
     public function downloadTemplate()
     {
-        $templatePath = public_path('templates/template_import_barang.xlsx');
+        $templatePath = public_path('templates/template_import_barang_baru.xlsx');
         
         if (!file_exists($templatePath)) {
             return back()->with('error', 'Template file tidak ditemukan.');
         }
         
-        return response()->download($templatePath, 'Template_Import_Barang.xlsx');
+        return response()->download($templatePath, 'Template_Import_Barang_Baru.xlsx', [
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
     }
 }

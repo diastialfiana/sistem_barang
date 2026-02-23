@@ -26,7 +26,8 @@
             <!-- Password -->
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
-                <input type="password" name="password" class="w-full border-gray-300 rounded shadow-sm" required>
+                <input type="password" name="password" class="w-full border-gray-300 rounded shadow-sm" placeholder="Biarkan kosong untuk default (sesuai NIP)">
+                <p class="text-xs text-gray-500 mt-1">Default password adalah NIP jika dikosongkan.</p>
             </div>
 
             <!-- Role -->
@@ -42,15 +43,34 @@
 
             <!-- Conditional Fields -->
             <div x-show="role !== 'super_admin'" x-transition>
-                <!-- Branch -->
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Cabang (Wajib untuk User/SPV/KA)</label>
-                    <select name="branch_id" class="w-full border-gray-300 rounded shadow-sm">
-                        <option value="">Pilih Cabang...</option>
-                        @foreach($branches as $branch)
-                            <option value="{{ $branch->id }}">{{ $branch->name }}</option>
-                        @endforeach
-                    </select>
+                <!-- Branch (with Inline Create) -->
+                <div class="mb-4" x-data="{ mode: 'select' }">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-gray-700 text-sm font-bold">Cabang (Wajib untuk User/SPV/KA)</label>
+                        <button type="button" 
+                            @click="mode = (mode === 'select' ? 'create' : 'select')" 
+                            class="text-xs text-blue-600 hover:text-blue-800 underline">
+                            <span x-text="mode === 'select' ? '+ Tambah Cabang Baru' : 'Pilih Cabang Yang Ada'"></span>
+                        </button>
+                    </div>
+
+                    <!-- Select Existing -->
+                    <div x-show="mode === 'select'">
+                        <select name="branch_id" class="w-full border-gray-300 rounded shadow-sm">
+                            <option value="">Pilih Cabang...</option>
+                            @foreach($branches as $branch)
+                                <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Create New -->
+                    <div x-show="mode === 'create'" style="display: none;">
+                        <input type="text" name="new_branch_name" 
+                            class="w-full border-gray-300 rounded shadow-sm" 
+                            placeholder="Masukkan Nama Cabang Baru...">
+                        <p class="text-xs text-stone-500 mt-1">*Cabang baru akan otomatis dibuat.</p>
+                    </div>
                 </div>
 
                 <!-- Job Title -->

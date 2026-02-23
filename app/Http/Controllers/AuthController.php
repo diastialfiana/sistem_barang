@@ -35,6 +35,27 @@ class AuthController extends Controller
             'nip' => 'NIP atau password salah.',
         ]);
     }
+    public function showForgotPasswordForm()
+    {
+        return view('auth.forgot-password');
+    }
+
+    public function resetPasswordToNip(Request $request)
+    {
+        $request->validate([
+            'nip' => 'required|string|exists:users,nip',
+        ]);
+
+        $user = \App\Models\User::where('nip', $request->nip)->firstOrFail();
+
+        // Reset password to NIP
+        $user->update([
+            'password' => \Illuminate\Support\Facades\Hash::make($user->nip)
+        ]);
+
+        return redirect()->route('login')->with('success', 'Password berhasil direset ke NIP: ' . $user->nip . '. Silakan login.');
+    }
+
     public function logout(Request $request)
     {
         Auth::logout();

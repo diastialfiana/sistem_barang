@@ -58,4 +58,17 @@ class User extends Authenticatable
         'last_logout_at' => 'datetime',
         'previous_login_at' => 'datetime',
     ];
+
+    public function getRoleColorAttribute()
+    {
+        $role = $this->getRoleNames()->first();
+
+        return match ($role) {
+            'super_admin' => 'bg-red-100 text-red-800',
+            'admin_1' => 'bg-blue-100 text-blue-800',
+            'admin_2' => 'bg-indigo-100 text-indigo-800',
+            'user' => 'bg-green-100 text-green-800',
+            default => 'bg-gray-100 text-gray-800',
+        };
+    }
 }

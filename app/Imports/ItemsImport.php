@@ -24,6 +24,7 @@ class ItemsImport implements ToCollection, WithHeadingRow
             $name = $this->findValue($row, ['nama_barang', 'nama barang', 'nama', 'barang', 'name', 'item']);
             $unit = $this->findValue($row, ['satuan', 'unit', 'uom']);
             $stock = $this->findValue($row, ['stok_awal', 'stok awal', 'stok', 'stock', 'qty', 'quantity', 'stock barang', 'stock_barang']);
+            $branchName = $this->findValue($row, ['cabang', 'branch', 'lokasi', 'location', 'area']);
 
             // Skip completely empty rows
             if (empty($name) && empty($unit) && ($stock === null || $stock === '')) {
@@ -56,14 +57,29 @@ class ItemsImport implements ToCollection, WithHeadingRow
             // Auto-detect category using existing model method
             $category = Item::detectCategory($name);
 
-            // Check if item already exists (case-insensitive)
-            $existingItem = Item::whereRaw('LOWER(name) = ?', [strtolower(trim($name))])->first();
+            // Resolve Branch
+            $branchId = null;
+            if ($branchName && strtolower(trim($branchName)) !== 'gudang pusat') {
+                $branch = \App\Models\Branch::whereRaw('LOWER(name) = ?', [strtolower(trim($branchName))])->first();
+                if ($branch) {
+                    $branchId = $branch->id;
+                } else {
+                    $rowErrors[] = "Cabang '" . $branchName . "' tidak ditemukan";
+                }
+            }
+
+            // Check if item already exists (case-insensitive) - update unique check to include branch_id
+            $existingItem = Item::whereRaw('LOWER(name) = ?', [strtolower(trim($name))])
+                ->where('branch_id', $branchId)
+                ->first();
 
             $this->importData[] = [
                 'name' => trim($name),
                 'unit' => $unit,
                 'stock' => (int) $cleanStock,
                 'category' => $category,
+                'branch_id' => $branchId,
+                'branch_name' => $branchName ?: 'Gudang Pusat',
                 'is_duplicate' => !is_null($existingItem),
                 'existing_item' => $existingItem ? [
                     'id' => $existingItem->id,

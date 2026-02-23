@@ -58,8 +58,8 @@
                             <div class="text-sm text-gray-500">{{ $user->email }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                {{ $user->getRoleNames()->first() ?? '-' }}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $user->role_color }}">
+                                {{ ucfirst(str_replace('_', ' ', $user->getRoleNames()->first() ?? '-')) }}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -75,6 +75,11 @@
                             <a href="{{ route('users.edit', $user->id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
                             
                             @if(auth()->id() !== $user->id)
+                                <form action="{{ route('users.reset_password', $user->id) }}" method="POST" class="inline" onsubmit="return confirm('Reset password user ini menjadi NIP?')">
+                                    @csrf
+                                    <button type="submit" class="text-yellow-600 hover:text-yellow-900 mr-3">Reset Pass</button>
+                                </form>
+
                                 <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="inline" onsubmit="return confirm('Yakin hapus user ini?')">
                                     @csrf
                                     @method('DELETE')
