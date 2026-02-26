@@ -42,31 +42,7 @@ class ItemController extends Controller
         ->orderBy('name')
         ->paginate(10);
 
-        // Fetch Branch Breakdown for the items in current page
         $branches = Branch::all();
-        
-        foreach ($items as $item) {
-            // Get quantity per branch for this item (only approved)
-            $item->branch_breakdown = \App\Models\RequestItem::selectRaw('branch_id, SUM(quantity) as total')
-                ->join('requests', 'request_items.request_id', '=', 'requests.id')
-                ->where('request_items.item_id', $item->id)
-                ->where('requests.status', 'approved')
-                ->groupBy('branch_id')
-                ->get()
-                ->pluck('total', 'branch_id');
-                
-             // Get pending requests per branch for this item
-             $item->branch_pending = \App\Models\RequestItem::selectRaw('branch_id, SUM(quantity) as total')
-                ->join('requests', 'request_items.request_id', '=', 'requests.id')
-                ->where('request_items.item_id', $item->id)
-                ->whereIn('requests.status', ['draft', 'pending_spv', 'pending_ka', 'pending_ga'])
-                ->whereYear('requests.created_at', $year)
-                ->whereMonth('requests.created_at', $month)
-                ->groupBy('branch_id')
-                ->get()
-                ->pluck('total', 'branch_id');
-        }
-
         return view('items.index', compact('items', 'branches'));
     }
 
@@ -140,25 +116,6 @@ class ItemController extends Controller
         ->get();
 
         $branches = Branch::all();
-        foreach ($items as $item) {
-            $item->branch_breakdown = \App\Models\RequestItem::selectRaw('branch_id, SUM(quantity) as total')
-                ->join('requests', 'request_items.request_id', '=', 'requests.id')
-                ->where('request_items.item_id', $item->id)
-                ->where('requests.status', 'approved')
-                ->groupBy('branch_id')
-                ->get()
-                ->pluck('total', 'branch_id');
-                
-             $item->branch_pending = \App\Models\RequestItem::selectRaw('branch_id, SUM(quantity) as total')
-                ->join('requests', 'request_items.request_id', '=', 'requests.id')
-                ->where('request_items.item_id', $item->id)
-                ->whereIn('requests.status', ['draft', 'pending_spv', 'pending_ka', 'pending_ga'])
-                ->whereYear('requests.created_at', $year)
-                ->whereMonth('requests.created_at', $month)
-                ->groupBy('branch_id')
-                ->get()
-                ->pluck('total', 'branch_id');
-        }
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.inventory_pdf', compact('items', 'branches'));
         return $pdf->download('Inventory-'.date('Y-m-d').'.pdf');

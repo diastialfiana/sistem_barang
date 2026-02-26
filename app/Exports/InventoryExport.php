@@ -57,59 +57,27 @@ class InventoryExport implements FromCollection, WithHeadings, WithMapping, With
         ->get();
 
         $exportData = collect();
-        $branches = \App\Models\Branch::all();
 
         foreach ($items as $item) {
-            // Get breakdown
-            $breakdown = \App\Models\RequestItem::selectRaw('branch_id, SUM(quantity) as total')
-                ->join('requests', 'request_items.request_id', '=', 'requests.id')
-                ->where('request_items.item_id', $item->id)
-                ->where('requests.status', 'approved')
-                ->groupBy('branch_id')
-                ->get()
-                ->pluck('total', 'branch_id');
-
-            $pending = \App\Models\RequestItem::selectRaw('branch_id, SUM(quantity) as total')
-                ->join('requests', 'request_items.request_id', '=', 'requests.id')
-                ->where('request_items.item_id', $item->id)
-                ->whereIn('requests.status', ['draft', 'pending_spv', 'pending_ka', 'pending_ga'])
-                ->whereYear('requests.created_at', $year)
-                ->whereMonth('requests.created_at', $month)
-                ->groupBy('branch_id')
-                ->get()
-                ->pluck('total', 'branch_id');
-
-            // Warehouse Row
-            $exportData->push([
-                'name' => $item->name,
-                'cabang' => 'Gudang Pusat',
-                'unit' => $item->unit,
-                'stock_awal' => $item->stock + ($item->total_keluar ?? 0),
-                'keluar' => $item->total_keluar ?? 0,
-                'sisa' => $item->stock,
-                'request' => '-',
-                'is_header' => true
-            ]);
-
-            // Branch Rows
-            $activeBranches = $branches->filter(function($b) use ($breakdown, $pending) {
-                return isset($breakdown[$b->id]) || isset($pending[$b->id]);
-            });
-
             if ($branch_id) {
-                $activeBranches = $activeBranches->where('id', $branch_id);
-            }
-
-            foreach ($activeBranches as $branch) {
                 $exportData->push([
-                    'name' => '',
-                    'cabang' => $branch->name,
-                    'unit' => '',
+                    'name' => $item->name,
+                    'unit' => $item->unit,
                     'stock_awal' => '-',
                     'keluar' => '-',
-                    'sisa' => $breakdown[$branch->id] ?? 0,
-                    'request' => $pending[$branch->id] ?? 0,
-                    'is_header' => false
+                    'sisa' => $item->total_keluar ?? 0,
+                    'request' => $item->total_request ?? 0,
+                    'is_header' => true
+                ]);
+            } else {
+                $exportData->push([
+                    'name' => $item->name,
+                    'unit' => $item->unit,
+                    'stock_awal' => $item->stock + ($item->total_keluar ?? 0),
+                    'keluar' => $item->total_keluar ?? 0,
+                    'sisa' => $item->stock,
+                    'request' => $item->total_request ?? 0,
+                    'is_header' => true
                 ]);
             }
         }
@@ -123,7 +91,6 @@ class InventoryExport implements FromCollection, WithHeadings, WithMapping, With
         return [
             'No',
             'Nama Barang',
-            'Cabang',
             'Satuan',
             'Stock (Awal)',
             'Keluar',
@@ -135,11 +102,9 @@ class InventoryExport implements FromCollection, WithHeadings, WithMapping, With
     public function map($row): array
     {
         static $no = 0;
-        static $lastItem = '';
 
         if ($row['is_header']) {
             $no++;
-            $lastItem = $row['name'];
             $displayNo = $no;
             $displayName = $row['name'];
         } else {
@@ -150,7 +115,6 @@ class InventoryExport implements FromCollection, WithHeadings, WithMapping, With
         return [
             $displayNo,
             $displayName,
-            $row['cabang'],
             $row['unit'],
             $row['stock_awal'],
             $row['keluar'],

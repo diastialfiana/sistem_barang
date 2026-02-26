@@ -48,7 +48,7 @@ class RequestListExport implements FromCollection, WithHeadings, WithEvents, Wit
                   ->where('status', 'approved'); // Only final approved by GA
 
         if ($user->hasRole('user')) {
-            $query->where('user_id', $user->id);
+            $query->where('branch_id', $user->branch_id);
         } elseif ($user->hasRole('admin_1')) {
             $query->where('branch_id', $user->branch_id);
         }
@@ -78,7 +78,7 @@ class RequestListExport implements FromCollection, WithHeadings, WithEvents, Wit
                   ->where('status', 'approved'); // Only final approved by GA
 
         if ($user->hasRole('user')) {
-            $query->where('user_id', $user->id);
+            $query->where('branch_id', $user->branch_id);
         } elseif ($user->hasRole('admin_1')) {
             $query->where('branch_id', $user->branch_id);
         } elseif ($user->hasRole('admin_2')) {

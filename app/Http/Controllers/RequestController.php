@@ -23,10 +23,11 @@ class RequestController extends Controller
         $query = RequestModel::with(['user', 'branch', 'items']);
 
         if ($user->hasRole('user')) {
-            $query->where('user_id', $user->id);
+            $query->where('branch_id', $user->branch_id);
         } elseif ($user->hasRole('admin_1')) {
             $query->where('branch_id', $user->branch_id);
-        } elseif ($user->hasRole('admin_2')) {
+        } elseif ($user->hasAnyRole(['admin_2', 'super_admin'])) {
+            // Ka Area and GA can see everything
         }
 
         if ($request->has('location_type') && in_array($request->location_type, ['dalam_kota', 'luar_kota'])) {
@@ -158,7 +159,7 @@ class RequestController extends Controller
     public function export(RequestModel $request)
     {
         if (!Auth::user()->hasAnyRole(['super_admin', 'admin_1', 'admin_2'])) {
-             if ($request->user_id !== Auth::id()) abort(403);
+             if ($request->branch_id !== Auth::user()->branch_id) abort(403);
         }
 
         $request->load(['items.item', 'approvals.approver', 'user', 'branch']);
@@ -178,11 +179,11 @@ class RequestController extends Controller
             ->where('status', 'approved'); 
 
         if ($user->hasRole('user')) {
-            $query->where('user_id', $user->id);
+            $query->where('branch_id', $user->branch_id);
         } elseif ($user->hasRole('admin_1')) {
             $query->where('branch_id', $user->branch_id);
-        } elseif ($user->hasRole('admin_2')) {
-           
+        } elseif ($user->hasAnyRole(['admin_2', 'super_admin'])) {
+           // Can see all
         }
         
         if ($request->has('location_type') && in_array($request->location_type, ['dalam_kota', 'luar_kota'])) {

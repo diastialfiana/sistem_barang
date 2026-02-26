@@ -75,7 +75,7 @@ class RequestRecapExport implements FromCollection, WithHeadings, WithEvents, Wi
                 $q->where('status', 'approved'); // Only final approved by GA
                 
                 if ($user->hasRole('user')) {
-                    $q->where('user_id', $user->id);
+                    $q->where('branch_id', $user->branch_id);
                 } elseif ($user->hasRole('admin_1')) {
                     $q->where('branch_id', $user->branch_id);
                 }

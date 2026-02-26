@@ -48,28 +48,28 @@ class DashboardController extends Controller
             $recentRequests = \App\Models\Request::with('user')->latest()->take(5)->get();
 
         } else {
-            // Staff/User Logic
+            // Staff/User Logic - see all requests in their branch
             $stats = [
                 [
                     'label' => 'Draft', 
-                    'value' => \App\Models\Request::where('user_id', $user->id)->where('status', 'draft')->count(), 
+                    'value' => \App\Models\Request::where('branch_id', $user->branch_id)->where('status', 'draft')->count(), 
                     'icon' => 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z', 
                     'color' => 'slate'
                 ],
                 [
                     'label' => 'Proses', 
-                    'value' => \App\Models\Request::where('user_id', $user->id)->whereIn('status', ['pending_spv', 'pending_ka', 'pending_ga'])->count(), 
+                    'value' => \App\Models\Request::where('branch_id', $user->branch_id)->whereIn('status', ['pending_spv', 'pending_ka', 'pending_ga'])->count(), 
                     'icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', 
                     'color' => 'blue'
                 ],
                 [
                     'label' => 'Selesai', 
-                    'value' => \App\Models\Request::where('user_id', $user->id)->where('status', 'approved')->count(), 
+                    'value' => \App\Models\Request::where('branch_id', $user->branch_id)->where('status', 'approved')->count(), 
                     'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', 
                     'color' => 'emerald'
                 ],
             ];
-            $recentRequests = \App\Models\Request::where('user_id', $user->id)->latest()->take(5)->get();
+            $recentRequests = \App\Models\Request::with('user')->where('branch_id', $user->branch_id)->latest()->take(5)->get();
         }
 
         // 2. Chart Data: Top 5 Items Out (Approved)

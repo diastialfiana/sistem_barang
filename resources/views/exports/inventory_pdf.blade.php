@@ -23,7 +23,6 @@
             <tr>
                 <th>No</th>
                 <th>Nama Barang</th>
-                <th>Cabang</th>
                 <th>Satuan</th>
                 <th style="text-align: center;">Stock (Awal)</th>
                 <th style="text-align: center;">Keluar</th>
@@ -33,38 +32,25 @@
         </thead>
         <tbody>
             @foreach($items as $item)
-                @php
-                    $activeBranches = $branches->filter(function($b) use ($item) {
-                        return isset($item->branch_breakdown[$b->id]) || isset($item->branch_pending[$b->id]);
-                    });
-                    
-                    if (request('branch_id')) {
-                        $activeBranches = $activeBranches->where('id', request('branch_id'));
-                    }
-                    $rowspan = $activeBranches->count() + 1;
-                @endphp
                 <tr>
-                    <td rowspan="{{ $rowspan }}" style="vertical-align: top;">{{ $loop->iteration }}</td>
-                    <td rowspan="{{ $rowspan }}" style="vertical-align: top;">
+                    <td style="vertical-align: top;">{{ $loop->iteration }}</td>
+                    <td style="vertical-align: top;">
                         <strong>{{ $item->name }}</strong><br>
                         <small style="color: #666;">{{ $item->category }}</small>
                     </td>
-                    <td style="background-color: #f9f9f9;">Gudang Pusat</td>
-                    <td rowspan="{{ $rowspan }}" style="vertical-align: top;">{{ $item->unit }}</td>
-                    <td style="text-align: center;">{{ $item->stock + ($item->total_keluar ?? 0) }}</td>
-                    <td style="text-align: center;">{{ $item->total_keluar ?? 0 }}</td>
-                    <td style="text-align: center;"><strong>{{ $item->stock }}</strong></td>
-                    <td style="text-align: center; color: #ccc;">-</td>
+                    <td style="vertical-align: top;">{{ $item->unit }}</td>
+                    @if(request('branch_id'))
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;">-</td>
+                        <td style="text-align: center;"><strong>{{ $item->total_keluar ?? 0 }}</strong></td>
+                        <td style="text-align: center; color: #008000;">{{ $item->total_request ?? 0 }}</td>
+                    @else
+                        <td style="text-align: center;">{{ $item->stock + ($item->total_keluar ?? 0) }}</td>
+                        <td style="text-align: center;">{{ $item->total_keluar ?? 0 }}</td>
+                        <td style="text-align: center;"><strong>{{ $item->stock }}</strong></td>
+                        <td style="text-align: center; color: #ccc;">{{ $item->total_request ?? 0 }}</td>
+                    @endif
                 </tr>
-                @foreach($activeBranches as $branch)
-                <tr>
-                    <td>{{ $branch->name }}</td>
-                    <td style="text-align: center; color: #ccc;">-</td>
-                    <td style="text-align: center; color: #ccc;">-</td>
-                    <td style="text-align: center;"><strong>{{ $item->branch_breakdown[$branch->id] ?? 0 }}</strong></td>
-                    <td style="text-align: center; color: #008000;">{{ $item->branch_pending[$branch->id] ?? 0 }}</td>
-                </tr>
-                @endforeach
             @endforeach
         </tbody>
     </table>
