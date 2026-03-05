@@ -29,5 +29,6 @@ jobs:
           server: ${{ secrets.SERVER }}
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
-          script: |
-            php artisan migrate:fresh --seed --force
+
+      - name: Migrate database and seed
+        run: php artisan migrate:fresh --seed
