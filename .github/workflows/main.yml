@@ -23,11 +23,8 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --no-dev --optimize-autoloader
 
-      - name: Run migration
-        run: php artisan migrate --force
-
-      - name: Run seeder
-        run: php artisan db:seed --force
+      - name: Migrate database and seed
+        run: php artisan migrate:fresh --seed --force
 
       - name: FTP-Deploy-Action
         uses: SamKirkland/FTP-Deploy-Action@4.3.3
