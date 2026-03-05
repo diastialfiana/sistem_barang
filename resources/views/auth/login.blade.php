@@ -15,7 +15,7 @@
     <!-- Header / Brand -->
     <div class="mb-10 text-center">
         <img src="{{ asset('images/jayatama.png') }}" alt="Logo PT. Jasa Swadaya Utama" class="h-16 mx-auto mb-4 object-contain">
-        <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">PT. Jasa Swadaya Utama</h1>
+        <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">PT. JAYATAMA</h1>
         <p class="text-slate-500 mt-2 text-sm font-medium">Internal Procurement System</p>
     </div>
 
