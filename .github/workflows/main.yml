@@ -30,5 +30,10 @@ jobs:
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PASSWORD }}
 
-      - name: Migrate database and seed
-        run: php artisan migrate:fresh --seed
+      - name: Run Migration via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: php artisan migrate:fresh --seed
