@@ -64,6 +64,10 @@ Route::middleware(['auth', 'role:super_admin|admin_1|admin_2'])->group(function 
     Route::post('items/import/process', [\App\Http\Controllers\ItemController::class, 'processImport'])->name('items.import.process');
     Route::get('items/import/template', [\App\Http\Controllers\ItemController::class, 'downloadTemplate'])->name('items.import.template');
     
+    // Recap Routes
+    Route::get('recaps', [\App\Http\Controllers\RecapController::class, 'index'])->name('recaps.index');
+    Route::get('recaps/{year}/{month}', [\App\Http\Controllers\RecapController::class, 'show'])->name('recaps.show');
+
     Route::resource('items', \App\Http\Controllers\ItemController::class);
 });
 

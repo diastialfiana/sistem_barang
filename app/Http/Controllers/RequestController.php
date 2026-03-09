@@ -25,10 +25,11 @@ class RequestController extends Controller
         if ($user->hasRole('user')) {
             $query->where('branch_id', $user->branch_id);
         } elseif ($user->hasRole('admin_1')) {
-            $query->where('branch_id', $user->branch_id);
+            // Supervisor (admin_1) can see all requests too, to correspond with approval access
         } elseif ($user->hasAnyRole(['admin_2', 'super_admin'])) {
             // Ka Area and GA can see everything
         }
+
 
         if ($request->has('location_type') && in_array($request->location_type, ['dalam_kota', 'luar_kota'])) {
             $query->whereHas('branch', function($q) use ($request) {
@@ -269,11 +270,13 @@ class RequestController extends Controller
     public function edit(RequestModel $request)
     {
         $user = Auth::user();
-        if ($user->id !== $request->user_id && !($user->hasRole('admin_1') && $user->branch_id === $request->branch_id)) {
+        if ($user->id !== $request->user_id 
+            && !($user->hasRole('admin_1') && $user->branch_id === $request->branch_id)
+            && !$user->hasAnyRole(['super_admin', 'admin_2'])) {
             abort(403, 'Unauthorized');
         }
 
-        if (!in_array($request->status, ['draft', 'pending_spv'])) {
+        if (!$user->hasRole('super_admin') && !in_array($request->status, ['draft', 'pending_spv'])) {
             return back()->with('error', 'Cannot edit request with status: ' . $request->status);
         }
 
@@ -285,7 +288,7 @@ class RequestController extends Controller
 
     public function update(Request $httpRequest, RequestModel $request)
     {
-        if (!in_array($request->status, ['draft', 'pending_spv'])) {
+        if (!Auth::user()->hasRole('super_admin') && !in_array($request->status, ['draft', 'pending_spv'])) {
              return back()->with('error', 'Cannot edit request with status: ' . $request->status);
         }
 
@@ -324,7 +327,8 @@ class RequestController extends Controller
 
     public function destroy(RequestModel $request)
     {
-        if (!in_array($request->status, ['draft', 'pending_spv'])) {
+        $user = Auth::user();
+        if (!in_array($request->status, ['draft', 'pending_spv']) && !$user->hasRole('super_admin')) {
              return back()->with('error', 'Cannot delete request with status: ' . $request->status);
         }
 

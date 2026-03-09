@@ -12,6 +12,10 @@ class Request extends Model
         'status', 'rejection_reason'
     ];
 
+    protected $casts = [
+        'request_date' => 'date',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);

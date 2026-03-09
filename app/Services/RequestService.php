@@ -178,14 +178,16 @@ class RequestService
 
     public function updateRequest(Request $request, User $actor, array $data, array $items)
     {
-        // Validation: Logic to ensure only Owner or SPV can edit
-        // Restricted to pending statuses only.
-        if (!in_array($request->status, ['draft', 'pending_spv'])) {
+        // Validation: Logic to ensure only Owner or Admin can edit
+        // Restricted to pending statuses only for non-super-admins
+        if (!$actor->hasRole('super_admin') && !in_array($request->status, ['draft', 'pending_spv'])) {
             throw new Exception("Cannot edit request with status: {$request->status}");
         }
         
-        // Allow Owner (Staff) or Branch SPV (Admin 1)
-        if ($actor->id !== $request->user_id && !($actor->hasRole('admin_1') && $actor->branch_id === $request->branch_id)) {
+        // Allow Owner (Staff) or Branch SPV (Admin 1) or Super Admin / Ka Area
+        if ($actor->id !== $request->user_id 
+            && !($actor->hasRole('admin_1') && $actor->branch_id === $request->branch_id)
+            && !$actor->hasAnyRole(['super_admin', 'admin_2'])) {
              throw new Exception("Unauthorized: You do not have permission to edit this request.");
         }
 
@@ -217,13 +219,15 @@ class RequestService
 
     public function deleteRequest(Request $request, User $actor)
     {
-        // Restricted to pending statuses only.
-        if (!in_array($request->status, ['draft', 'pending_spv'])) {
+        // Restricted to pending statuses only for non-super-admins
+        if (!$actor->hasRole('super_admin') && !in_array($request->status, ['draft', 'pending_spv'])) {
             throw new Exception("Cannot delete request with status: {$request->status}");
         }
 
-        // Allow Owner (Staff) or Branch SPV (Admin 1)
-        if ($actor->id !== $request->user_id && !($actor->hasRole('admin_1') && $actor->branch_id === $request->branch_id)) {
+        // Allow Owner (Staff) or Branch SPV (Admin 1) or Super Admin
+        if ($actor->id !== $request->user_id 
+            && !($actor->hasRole('admin_1') && $actor->branch_id === $request->branch_id)
+            && !$actor->hasRole('super_admin')) {
              throw new Exception("Unauthorized: You do not have permission to delete this request.");
         }
 
@@ -244,10 +248,7 @@ class RequestService
     private function validateApprovalAccess(Request $request, User $user)
     {
         if ($user->hasRole('admin_1') && $request->status === 'pending_spv') {
-            // SPV can only approve own branch
-            if ($user->branch_id !== $request->branch_id) {
-                throw new Exception("Unauthorized: SPV belongs to different branch.");
-            }
+            // SPV can approve requests from any staff member as requested
             return true;
         }
 

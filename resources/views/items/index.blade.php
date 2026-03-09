@@ -8,6 +8,8 @@
             itemCategory: '',
             itemUnit: '',
             itemStock: 0,
+            itemYearlyStock: 0,
+            itemPrice: 0,
             itemBranchId: '',
             
             // Import states
@@ -63,6 +65,8 @@
                 this.itemCategory = '';
                 this.itemUnit = '';
                 this.itemStock = 0;
+                this.itemYearlyStock = 0;
+                this.itemPrice = 0;
                 this.itemBranchId = '';
                 this.modalOpen = true;
             },
@@ -74,6 +78,8 @@
                 this.itemCategory = item.category || '';
                 this.itemUnit = item.unit;
                 this.itemStock = item.stock;
+                this.itemYearlyStock = item.yearly_stock || 0;
+                this.itemPrice = item.price || 0;
                 this.itemBranchId = item.branch_id || '';
                 this.modalOpen = true;
             },
@@ -254,12 +260,14 @@
                     <thead class="bg-slate-50 border-b border-slate-200">
                         <tr>
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">No</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Nama Barang</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Satuan</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Stock (Awal)</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Keluar</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Sisa</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Request</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider min-w-[200px]">Nama Barang</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Satuan</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right whitespace-nowrap">Harga Barang</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center whitespace-nowrap">Stock (Awal)</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center whitespace-nowrap">Stock (Tahun)</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center whitespace-nowrap">Keluar</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center whitespace-nowrap">Sisa</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center whitespace-nowrap">Request</th>
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Aksi</th>
                         </tr>
                     </thead>
@@ -277,7 +285,9 @@
                             <td class="px-6 py-4">
                                 <span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">{{ $item->unit }}</span>
                             </td>
-                            
+                            <td class="px-6 py-4 text-right whitespace-nowrap">
+    <span class="font-bold text-slate-700">Rp {{ number_format($item->price, 0, ',', '.') }}</span>
+</td>                            
                             @if(request('branch_id'))
                                 <td class="px-6 py-4 text-center font-bold text-slate-400 italic">
                                     -
@@ -294,13 +304,16 @@
                                     <div class="text-[10px] text-blue-400 font-bold mt-1 uppercase">PENDING</div>
                                 </td>
                             @else
-                                <td class="px-6 py-4 text-center font-bold text-slate-700">
+                                <td class="px-6 py-4 text-center font-bold text-slate-700 whitespace-nowrap">
                                     {{ $item->stock + ($item->total_keluar ?? 0) }}
                                 </td>
-                                <td class="px-6 py-4 text-center font-bold text-slate-400 bg-slate-50/50">
+                                <td class="px-6 py-4 text-center font-bold text-slate-500 whitespace-nowrap">
+                                    {{ $item->yearly_stock }}
+                                </td>
+                                <td class="px-6 py-4 text-center font-bold text-slate-400 bg-slate-50/50 whitespace-nowrap">
                                     {{ $item->total_keluar ?? 0 }}
                                 </td>
-                                <td class="px-6 py-4 text-center">
+                                <td class="px-6 py-4 text-center whitespace-nowrap">
                                     @if($item->stock <= 5)
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-600 border border-red-100">
                                             {{ $item->stock }}
@@ -310,7 +323,7 @@
                                     @endif
                                     <div class="text-[10px] text-slate-400 font-bold mt-1 uppercase">READY</div>
                                 </td>
-                                <td class="px-6 py-4 text-center font-bold text-blue-600 bg-blue-50 rounded-lg">
+                                <td class="px-6 py-4 text-center font-bold text-blue-600 bg-blue-50 rounded-lg whitespace-nowrap">
                                     {{ $item->total_request ?? 0 }}
                                     <div class="text-[10px] text-blue-400 font-bold mt-1 uppercase">PENDING</div>
                                 </td>
@@ -395,6 +408,17 @@
                             <div>
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Stok Awal</label>
                                 <input type="number" name="stock" x-model="itemStock" required min="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-semibold text-slate-800 transition-all">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Harga Barang (Rp)</label>
+                                <input type="text" name="price" x-model="itemPrice" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-semibold text-slate-800 transition-all" placeholder="Contoh: 10.000">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Stock per Tahun</label>
+                                <input type="number" name="yearly_stock" x-model="itemYearlyStock" required min="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-semibold text-slate-800 transition-all">
                             </div>
                         </div>
 
@@ -508,7 +532,9 @@
                                     <th class="px-4 py-3 text-left font-bold text-slate-600">Nama Barang</th>
                                     <th class="px-4 py-3 text-left font-bold text-slate-600">Cabang</th>
                                     <th class="px-4 py-3 text-left font-bold text-slate-600">Satuan</th>
+                                    <th class="px-4 py-3 text-left font-bold text-slate-600 text-right">Harga</th>
                                     <th class="px-4 py-3 text-left font-bold text-slate-600">Stok</th>
+                                    <th class="px-4 py-3 text-left font-bold text-slate-600">Stok (Tahun)</th>
                                     <th class="px-4 py-3 text-left font-bold text-slate-600">Kategori</th>
                                     <th class="px-4 py-3 text-left font-bold text-slate-600">Status</th>
                                 </tr>
@@ -527,7 +553,11 @@
                                             <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-semibold" x-text="item.branch_name"></span>
                                         </td>
                                         <td class="px-4 py-3" x-text="item.unit"></td>
+                                        <td class="px-4 py-3 text-right">
+                                            <span class="font-bold text-slate-700" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(item.price)"></span>
+                                        </td>
                                         <td class="px-4 py-3" x-text="item.stock"></td>
+                                        <td class="px-4 py-3" x-text="item.yearly_stock"></td>
                                         <td class="px-4 py-3">
                                             <span class="text-xs bg-slate-100 px-2 py-1 rounded font-semibold" x-text="item.category"></span>
                                         </td>

@@ -42,7 +42,55 @@ class UserManagementController extends Controller
         $roles = Role::all();
         $branches = Branch::all();
 
-        return view('users.index', compact('users', 'roles', 'branches'));
+        // Calculate ATK Summary
+        $now = \Carbon\Carbon::now('Asia/Jakarta');
+        $currentMonth = $now->month;
+        $currentYear = $now->year;
+        
+        $nextMonthObj = $now->copy()->addMonth();
+        $nextMonth = $nextMonthObj->month;
+        $nextYear = $nextMonthObj->year;
+
+        $atkSummary = [
+            'current_month' => [
+                'label' => $now->translatedFormat('F Y'),
+                'month' => $currentMonth,
+                'year' => $currentYear,
+                'total_qty' => \App\Models\RequestItem::whereHas('item', fn($q) => $q->where('category', 'Alat Tulis Kantor'))
+                    ->whereHas('request', function($q) use ($currentMonth, $currentYear) {
+                        $q->whereMonth('request_date', $currentMonth)
+                          ->whereYear('request_date', $currentYear)
+                          ->whereIn('status', ['approved', 'pending_ga', 'pending_ka', 'pending_spv']);
+                    })->sum('quantity'),
+                'total_price' => \App\Models\RequestItem::join('items', 'request_items.item_id', '=', 'items.id')
+                    ->where('items.category', 'Alat Tulis Kantor')
+                    ->whereHas('request', function($q) use ($currentMonth, $currentYear) {
+                        $q->whereMonth('request_date', $currentMonth)
+                          ->whereYear('request_date', $currentYear)
+                          ->whereIn('status', ['approved', 'pending_ga', 'pending_ka', 'pending_spv']);
+                    })->sum(\Illuminate\Support\Facades\DB::raw('request_items.quantity * items.price'))
+            ],
+            'next_month' => [
+                'label' => $nextMonthObj->translatedFormat('F Y'),
+                'month' => $nextMonth,
+                'year' => $nextYear,
+                'total_qty' => \App\Models\RequestItem::whereHas('item', fn($q) => $q->where('category', 'Alat Tulis Kantor'))
+                    ->whereHas('request', function($q) use ($nextMonth, $nextYear) {
+                        $q->whereMonth('request_date', $nextMonth)
+                          ->whereYear('request_date', $nextYear)
+                          ->whereIn('status', ['approved', 'pending_ga', 'pending_ka', 'pending_spv']);
+                    })->sum('quantity'),
+                'total_price' => \App\Models\RequestItem::join('items', 'request_items.item_id', '=', 'items.id')
+                    ->where('items.category', 'Alat Tulis Kantor')
+                    ->whereHas('request', function($q) use ($nextMonth, $nextYear) {
+                        $q->whereMonth('request_date', $nextMonth)
+                          ->whereYear('request_date', $nextYear)
+                          ->whereIn('status', ['approved', 'pending_ga', 'pending_ka', 'pending_spv']);
+                    })->sum(\Illuminate\Support\Facades\DB::raw('request_items.quantity * items.price'))
+            ]
+        ];
+
+        return view('users.index', compact('users', 'roles', 'branches', 'atkSummary'));
     }
 
     public function create()

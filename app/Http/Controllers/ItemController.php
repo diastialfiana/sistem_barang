@@ -48,10 +48,19 @@ class ItemController extends Controller
 
     public function store(Request $request)
     {
+        $data = $request->all();
+        if (isset($data['price'])) {
+            $data['price'] = $this->cleanPrice($data['price']);
+        }
+
+        $request->merge($data);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'unit' => 'required|string|max:50',
+            'price' => 'nullable|numeric|min:0',
             'stock' => 'required|integer|min:0',
+            'yearly_stock' => 'required|integer|min:0',
             'branch_id' => 'nullable|exists:branches,id',
         ]);
 
@@ -62,10 +71,19 @@ class ItemController extends Controller
 
     public function update(Request $request, Item $item)
     {
+        $data = $request->all();
+        if (isset($data['price'])) {
+            $data['price'] = $this->cleanPrice($data['price']);
+        }
+
+        $request->merge($data);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'unit' => 'required|string|max:50',
+            'price' => 'nullable|numeric|min:0',
             'stock' => 'required|integer|min:0',
+            'yearly_stock' => 'required|integer|min:0',
             'branch_id' => 'nullable|exists:branches,id',
         ]);
 
@@ -256,5 +274,33 @@ class ItemController extends Controller
             'Pragma' => 'no-cache',
             'Expires' => '0',
         ]);
+    }
+
+    private function cleanPrice($value)
+    {
+        if (!$value) return 0;
+        
+        $value = str_replace('Rp', '', $value);
+        $value = str_replace(' ', '', $value);
+        
+        // If it has both . and , assume . is thousand and , is decimal
+        if (strpos($value, '.') !== false && strpos($value, ',') !== false) {
+            $value = str_replace('.', '', $value);
+            $value = str_replace(',', '.', $value);
+        } elseif (strpos($value, ',') !== false) {
+            // If only comma, check if it's 3 digits at end (thousand) or less (decimal)
+            if (preg_match('/,\d{3}$/', $value)) {
+                $value = str_replace(',', '', $value);
+            } else {
+                $value = str_replace(',', '.', $value);
+            }
+        } elseif (strpos($value, '.') !== false) {
+            // If only dot, if it's 3 digits at end, it's a thousand separator
+            if (preg_match('/\.\d{3}$/', $value)) {
+                $value = str_replace('.', '', $value);
+            }
+        }
+        
+        return (float) $value;
     }
 }

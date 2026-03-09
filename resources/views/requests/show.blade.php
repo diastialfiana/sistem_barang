@@ -34,26 +34,32 @@
         <!-- Items Table -->
         <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
             <h3 class="px-6 py-4 bg-gray-50 font-bold border-b border-gray-200">Daftar Barang</h3>
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-white">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Barang</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Satuan</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catatan</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                    @foreach($request->items as $item)
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-white">
                         <tr>
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->item->name }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">{{ $item->quantity }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-500">{{ $item->item->unit }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-500">{{ $item->notes ?? '-' }}</td>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Barang</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Harga Barang</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Satuan</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catatan</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        @foreach($request->items as $item)
+                            <tr>
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->item->name }}</td>
+                                <td class="px-6 py-4 text-right whitespace-nowrap">
+    <span class="font-bold text-slate-700">Rp {{ number_format($item->price, 0, ',', '.') }}</span>
+</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $item->quantity }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">{{ $item->item->unit }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">{{ $item->notes ?? '-' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <!-- Approval Timeline -->
@@ -104,6 +110,20 @@
                 </form>
                 <a href="{{ route('requests.edit', $request->id) }}" class="bg-yellow-500 text-white px-6 py-2 rounded shadow hover:bg-yellow-600 font-bold flex items-center">
                     Edit Request
+                </a>
+            @endif
+
+            <!-- Edit/Delete for Super Admin - Always accessible -->
+            @if(Auth::user()->hasRole('super_admin'))
+                <form action="{{ route('requests.destroy', $request->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus request ini?');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded shadow hover:bg-red-700 font-bold">
+                        Hapus Request (Admin)
+                    </button>
+                </form>
+                <a href="{{ route('requests.edit', $request->id) }}" class="bg-yellow-600 text-white px-6 py-2 rounded shadow hover:bg-yellow-700 font-bold flex items-center">
+                    Edit Request (Admin)
                 </a>
             @endif
 

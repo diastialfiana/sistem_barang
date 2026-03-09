@@ -24,7 +24,9 @@
                 <th>No</th>
                 <th>Nama Barang</th>
                 <th>Satuan</th>
+                <th style="text-align: right;">Harga Barang</th>
                 <th style="text-align: center;">Stock (Awal)</th>
+                <th style="text-align: center;">Stock (Tahun)</th>
                 <th style="text-align: center;">Keluar</th>
                 <th style="text-align: center;">Sisa (READY)</th>
                 <th style="text-align: center;">Request (PENDING)</th>
@@ -39,13 +41,16 @@
                         <small style="color: #666;">{{ $item->category }}</small>
                     </td>
                     <td style="vertical-align: top;">{{ $item->unit }}</td>
+                    <td style="vertical-align: top; text-align: right;">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
                     @if(request('branch_id'))
+                        <td style="text-align: center;">-</td>
                         <td style="text-align: center;">-</td>
                         <td style="text-align: center;">-</td>
                         <td style="text-align: center;"><strong>{{ $item->total_keluar ?? 0 }}</strong></td>
                         <td style="text-align: center; color: #008000;">{{ $item->total_request ?? 0 }}</td>
                     @else
                         <td style="text-align: center;">{{ $item->stock + ($item->total_keluar ?? 0) }}</td>
+                        <td style="text-align: center;">{{ $item->yearly_stock }}</td>
                         <td style="text-align: center;">{{ $item->total_keluar ?? 0 }}</td>
                         <td style="text-align: center;"><strong>{{ $item->stock }}</strong></td>
                         <td style="text-align: center; color: #ccc;">{{ $item->total_request ?? 0 }}</td>

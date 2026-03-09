@@ -23,7 +23,9 @@ class ItemsImport implements ToCollection, WithHeadingRow
             // Flexible mapping - try different possible column names
             $name = $this->findValue($row, ['nama_barang', 'nama barang', 'nama', 'barang', 'name', 'item']);
             $unit = $this->findValue($row, ['satuan', 'unit', 'uom']);
+            $price = $this->findValue($row, ['harga_barang', 'harga barang', 'harga', 'price', 'rate']);
             $stock = $this->findValue($row, ['stok_awal', 'stok awal', 'stok', 'stock', 'qty', 'quantity', 'stock barang', 'stock_barang']);
+            $yearlyStock = $this->findValue($row, ['stok_tahun', 'stok tahun', 'stock_per_tahun', 'stock per tahun', 'yearly_stock', 'yearly stock']);
             $branchName = $this->findValue($row, ['cabang', 'branch', 'lokasi', 'location', 'area']);
 
             // Skip completely empty rows
@@ -47,6 +49,10 @@ class ItemsImport implements ToCollection, WithHeadingRow
             if ($cleanStock === null || $cleanStock < 0) {
                 $rowErrors[] = "Stok harus berupa angka minimal 0 (saat ini: '" . $stock . "')";
             }
+
+            // Clean and validate price & yearly stock
+            $cleanPrice = $this->cleanNumericValue($price) ?? 0;
+            $cleanYearlyStock = $this->cleanNumericValue($yearlyStock) ?? 0;
 
             // If there are errors, record them and skip
             if (!empty($rowErrors)) {
@@ -76,7 +82,9 @@ class ItemsImport implements ToCollection, WithHeadingRow
             $this->importData[] = [
                 'name' => trim($name),
                 'unit' => $unit,
+                'price' => (float) $cleanPrice,
                 'stock' => (int) $cleanStock,
+                'yearly_stock' => (int) $cleanYearlyStock,
                 'category' => $category,
                 'branch_id' => $branchId,
                 'branch_name' => $branchName ?: 'Gudang Pusat',
@@ -99,13 +107,55 @@ class ItemsImport implements ToCollection, WithHeadingRow
             return null;
         }
         
-        // Convert to string first
         $value = (string) $value;
+        $value = trim($value);
         
-        // Remove spaces, commas, dots used as thousand separators
-        $value = str_replace([' ', ','], '', trim($value));
+        // Handle common ID format: 10.000,00 or 10.000
+        if (strpos($value, '.') !== false && strpos($value, ',') !== false) {
+            // Both dot and comma: dot is thousand, comma is decimal
+            $value = str_replace('.', '', $value);
+            $value = str_replace(',', '.', $value);
+        } elseif (strpos($value, ',') !== false) {
+            // Only comma: check if it's thousand (e.g. 10,000) or decimal (e.g. 10,5)
+            if (preg_match('/,\d{3}($|[^0-9])/', $value)) {
+                $value = str_replace(',', '', $value); 
+            } else {
+                $value = str_replace(',', '.', $value);
+            }
+        } elseif (strpos($value, '.') !== false) {
+            // Only dot: check if it's thousand (e.g. 10.000) or decimal (e.g. 10.5)
+            if (preg_match('/\.\d{3}($|[^0-9])/', $value)) {
+                $value = str_replace('.', '', $value); 
+            }
+        }
         
-        // Check if it's numeric after cleaning
+        $value = str_replace([' ', 'Rp', '.', 'rp'], '', $value); // Final clean of currency prefix and leftover dots if any
+        
+        // Wait, I should not remove ALL dots if one is actually a decimal.
+        // Let's refine the final clean.
+        
+        // Redoing the logic more simply:
+        $value = (string) $value;
+        $value = preg_replace('/[^\d,.]/', '', $value); // Keep only digits, comma, and dot
+        
+        // If there are both, assume dot is thousand, comma is decimal (ID standard)
+        if (strpos($value, '.') !== false && strpos($value, ',') !== false) {
+            $value = str_replace('.', '', $value);
+            $value = str_replace(',', '.', $value);
+        } elseif (strpos($value, ',') !== false) {
+            // If only comma, check if it's decimal or thousand
+            if (preg_match('/,\d{3}$/', $value)) {
+                $value = str_replace(',', '', $value);
+            } else {
+                $value = str_replace(',', '.', $value);
+            }
+        } elseif (strpos($value, '.') !== false) {
+            // If only dot, check if it's thousand
+            if (preg_match('/\.\d{3}$/', $value)) {
+                $value = str_replace('.', '', $value);
+            }
+        }
+
         if (is_numeric($value)) {
             return (float) $value;
         }

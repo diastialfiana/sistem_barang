@@ -5,6 +5,39 @@
             + Tambah User
         </a>
     </div>
+    
+    <!-- ATK Summary Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        @foreach($atkSummary as $key => $data)
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-all">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="p-3 bg-{{ $key == 'current_month' ? 'blue' : 'indigo' }}-50 text-{{ $key == 'current_month' ? 'blue' : 'indigo' }}-600 rounded-xl">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider">Total ATK {{ $data['label'] }}</h3>
+                    <p class="text-2xl font-black text-slate-800 tracking-tight">Rp. {{ number_format($data['total_price'], 0, ',', '.') }}</p>
+                </div>
+            </div>
+            <div class="flex items-center justify-between text-sm py-2 px-3 bg-slate-50 rounded-lg">
+                <span class="text-slate-600 font-medium">Banyak Barang (Qty):</span>
+                <span class="font-bold text-slate-800">{{ number_format($data['total_qty'], 0, ',', '.') }} Item</span>
+            </div>
+            
+            @php
+                // Use the raw month and year passed from controller
+                $m = $data['month'];
+                $y = $data['year'];
+            @endphp
+            <div class="mt-4 pt-4 border-t border-slate-50">
+                <a href="{{ route('recaps.show', ['year' => $y, 'month' => $m]) }}" class="text-{{ $key == 'current_month' ? 'blue' : 'indigo' }}-600 hover:text-{{ $key == 'current_month' ? 'blue' : 'indigo' }}-800 text-xs font-bold flex items-center gap-1 group/link">
+                    Lihat Detail Rekap
+                    <svg class="w-3 h-3 transform group-hover/link:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </a>
+            </div>
+        </div>
+        @endforeach
+    </div>
 
     <!-- Filters -->
     <div class="bg-white p-4 rounded-lg shadow mb-6">

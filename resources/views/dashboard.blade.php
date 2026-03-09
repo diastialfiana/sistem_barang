@@ -45,22 +45,34 @@
         </div>
 
         <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             @foreach($stats as $stat)
-            <div class="bg-white rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{{ $stat['label'] }}</p>
-                        <h3 class="text-3xl font-black text-slate-800 tracking-tight">{{ $stat['value'] }}</h3>
+            <div class="bg-white rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{{ $stat['label'] }}</p>
+                            <h3 class="text-2xl font-black text-slate-800 tracking-tight whitespace-nowrap">{{ $stat['value'] }}</h3>
+                        </div>
+                        <div class="p-3 bg-{{ $stat['color'] }}-50 text-{{ $stat['color'] }}-600 rounded-2xl shadow-sm">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $stat['icon'] }}"></path></svg>
+                        </div>
                     </div>
-                    <div class="p-3 bg-{{ $stat['color'] }}-50 text-{{ $stat['color'] }}-600 rounded-2xl shadow-sm">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $stat['icon'] }}"></path></svg>
+                    
+                    <!-- Mini Progress/Decor -->
+                    <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-{{ $stat['color'] }}-500 h-1.5 rounded-full" style="width: 70%"></div>
                     </div>
                 </div>
-                <!-- Mini Progress/Decor -->
-                <div class="mt-4 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                    <div class="bg-{{ $stat['color'] }}-500 h-1.5 rounded-full" style="width: 70%"></div>
+
+                @if(isset($stat['link']))
+                <div class="mt-4 pt-4 border-t border-slate-50">
+                    <a href="{{ $stat['link'] }}" class="text-{{ $stat['color'] }}-600 hover:text-{{ $stat['color'] }}-800 text-xs font-bold flex items-center gap-1 group/link">
+                        Lihat Detail
+                        <svg class="w-3 h-3 transform group-hover/link:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </a>
                 </div>
+                @endif
             </div>
             @endforeach
         </div>

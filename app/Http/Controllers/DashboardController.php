@@ -22,6 +22,7 @@ class DashboardController extends Controller
                 $pendingQuery->where('status', 'pending_ka');
             } elseif ($user->hasRole('super_admin')) {
                 $pendingQuery->where('status', 'pending_ga');
+                // Super Admin can see all branch requests that need GA approval
             }
 
             $stats = [
@@ -33,7 +34,7 @@ class DashboardController extends Controller
                 ],
                 [
                     'label' => 'Total Request',
-                    'value' => \App\Models\Request::whereMonth('created_at', now()->month)->count(),
+                    'value' => \App\Models\Request::count(), // All time total request as per image reference (29)
                     'icon' => 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
                     'color' => 'blue'
                 ],
@@ -42,6 +43,13 @@ class DashboardController extends Controller
                     'value' => \App\Models\RequestItem::whereHas('request', fn($q) => $q->where('status', 'approved'))->sum('quantity'),
                     'icon' => 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4',
                     'color' => 'emerald'
+                ],
+                [
+                    'label' => 'Total Harga Inventory',
+                    'value' => 'Rp ' . number_format(\App\Models\Item::sum(\Illuminate\Support\Facades\DB::raw('price * stock')), 0, ',', '.'),
+                    'icon' => 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+                    'color' => 'indigo',
+                    'link' => route('items.index')
                 ],
             ];
             

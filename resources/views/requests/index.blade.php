@@ -90,8 +90,18 @@
                                 {{ $statusLabels[$request->status] ?? ucfirst($request->status) }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
                             <a href="{{ route('requests.show', $request->id) }}" class="text-indigo-600 hover:text-indigo-900">Detail</a>
+                            @if(Auth::user()->hasRole('super_admin'))
+                                <span class="text-gray-300">|</span>
+                                <a href="{{ route('requests.edit', $request->id) }}" class="text-yellow-600 hover:text-yellow-900">Edit</a>
+                                <span class="text-gray-300">|</span>
+                                <form action="{{ route('requests.destroy', $request->id) }}" method="POST" class="inline" onsubmit="return confirm('Hapus request ini?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-900">Hapus</button>
+                                </form>
+                            @endif
                         </td>
                     </tr>
                 @empty
