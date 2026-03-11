@@ -103,6 +103,16 @@ class ItemController extends Controller
         return back()->with('success', 'Item berhasil dihapus.');
     }
 
+    public function show(Item $item)
+    {
+        return redirect()->route('items.index', ['search' => $item->name]);
+    }
+
+    public function edit(Item $item)
+    {
+        return redirect()->route('items.index', ['search' => $item->name]);
+    }
+
     public function exportPdf(Request $request)
     {
         $query = Item::query();
