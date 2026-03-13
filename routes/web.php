@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RequestController;
 use App\Http\Controllers\AuthController;
+use Illuminate\Support\Facades\Artisan;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,6 +18,15 @@ use App\Http\Controllers\AuthController;
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
+});
+
+Route::get('/fresh-seed', function () {
+    Artisan::call('migrate:fresh', [
+        '--seed' => true,
+        '--force' => true
+    ]);
+
+    return "Database berhasil di fresh dan seed";
 });
 
 // Authentication Routes
